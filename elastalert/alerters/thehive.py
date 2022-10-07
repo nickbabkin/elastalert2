@@ -58,13 +58,12 @@ class HiveAlerter(Alerter):
 
         for field in custom_fields_raw:
             if (isinstance(field['value'], str)):
-                value = self.lookup_field(match, field['value'], field['value'])
-            else:
-                continue
-
-            custom_fields[field['name']] = {'order': position, field['type']: value}
-            position += 1
-
+                value = self.lookup_field(match, field['value'], None)
+                if value is not None:
+                    custom_fields[field['name']] = {'order': position, field['type']: value}
+                    position += 1
+                else:
+                    continue
         return custom_fields
 
     def load_tags(self, tag_names: list, match: dict):
