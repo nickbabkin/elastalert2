@@ -60,7 +60,7 @@ class HiveAlerter(Alerter):
             if (isinstance(field['value'], str)):
                 value = self.lookup_field(match, field['value'], field['value'])
             else:
-                value = field['value']
+                continue
 
             custom_fields[field['name']] = {'order': position, field['type']: value}
             position += 1
