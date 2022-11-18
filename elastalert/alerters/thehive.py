@@ -54,7 +54,10 @@ class HiveAlerter(Alerter):
 
     def load_custom_fields(self, custom_fields_raw: list, match: dict):
         custom_fields = {}
-        position = 0
+        
+        # We append rule name as default custom field
+        custom_fields[field['rule-name']] = {'order': 0, field['type']: self.rule.get['name']}
+        position = 1
 
         for field in custom_fields_raw:
             if (isinstance(field['value'], str)):
