@@ -237,6 +237,7 @@ properties:
       - type: string
   aggregation: *timeframe
   realert: *timeframe
+  realert_key: {type: string}
   exponential_realert: *timeframe
 
   buffer_time: *timeframe
@@ -260,6 +261,7 @@ properties:
   kibana_url: {type: string, format: uri}
   kibana_username: {type: string}
   kibana_password: {type: string}
+  kibana_verify_certs: {type: boolean}
   use_local_time: {type: boolean}
   custom_pretty_ts_format: {type: string}
   match_enhancements: {type: array, items: {type: string}}
@@ -278,7 +280,7 @@ properties:
   generate_kibana_discover_url: {type: boolean}
   shorten_kibana_discover_url: {type: boolean}
   kibana_discover_app_url: {type: string}
-  kibana_discover_version: {type: string, enum: ['8.4', '8.3', '8.2', '8.1', '8.0', '7.17', '7.16', '7.15', '7.14', '7.13', '7.12', '7.11', '7.10', '7.9', '7.8', '7.7', '7.6', '7.5', '7.4', '7.3', '7.2', '7.1', '7.0']}
+  kibana_discover_version: {type: string, enum: ['8.6', '8.5', '8.4', '8.3', '8.2', '8.1', '8.0', '7.17', '7.16', '7.15', '7.14', '7.13', '7.12', '7.11', '7.10', '7.9', '7.8', '7.7', '7.6', '7.5', '7.4', '7.3', '7.2', '7.1', '7.0']}
   kibana_discover_index_pattern_id: {type: string, minLength: 1}
   kibana_discover_columns: {type: array, items: {type: string, minLength: 1}, minItems: 1}
   kibana_discover_from_timedelta: *timedelta
@@ -323,7 +325,7 @@ properties:
   alertmanager_alert_subject_labelname: {type: string}
   alertmanager_alert_text_labelname: {type: string}
   alertmanager_proxy: {type: string}
-  alertmanager_ca_certs: {type: boolean}
+  alertmanager_ca_certs: {type: [boolean, string]}
   alertmanager_ignore_ssl_errors: {type: boolean}
   alertmanager_timeout: {type: integer}
   alertmanager_basic_auth_login: {type: string}
@@ -452,6 +454,40 @@ properties:
   gitter_msg_level: {enum: [info, error]}
   gitter_proxy: {type: string}
 
+  ### Gelf
+  gelf_type: {type: string, enum: ['http', 'tcp']}
+  gelf_endpoint: {type: string}
+  gelf_host: {type: string}
+  gelf_port: {type: integer}
+  gelf_payload:
+    type: object
+    minProperties: 1
+    patternProperties:
+      "^.+$":
+        oneOf:
+          - type: string
+          - type: object
+            additionalProperties: false
+            required: [field]
+            properties:
+              field: {type: string, minLength: 1}
+  gelf_log_level: {type: integer, enum: ['0', 1', '2', '3', '4', '5', '6', '7']}
+  gelf_http_headers:
+    type: object
+    minProperties: 1
+    patternProperties:
+      "^.+$":
+        oneOf:
+          - type: string
+          - type: object
+            additionalProperties: false
+            required: [ field ]
+            properties:
+              field: { type: string, minLength: 1 }
+  gelf_ca_cert: {type: string}
+  gelf_http_ignore_ssl_errors: {type: boolean}
+  gelf_timeout: {type: integer}
+
   ### GoogleChat
   googlechat_webhook_url: *arrayOfString
   googlechat_format: {type: string, enum: ['basic', 'card']}
@@ -459,20 +495,21 @@ properties:
   googlechat_header_subtitle: {type: string}
   googlechat_header_image: {type: string}
   googlechat_footer_kibanalink: {type: string}
+  googlechat_proxy: {type: string}
 
   ### HTTP POST
   http_post_url: *arrayOfString
   http_post_proxy: {type: string}
-  http_post_ca_certs: {type: boolean}
+  http_post_ca_certs: {type: [boolean, string]}
   http_post_ignore_ssl_errors: {type: boolean}
   http_post_timeout: {type: integer}
 
   ### HTTP POST 2
   http_post2_url: *arrayOfString
-  http_post2_proxy: { type: string }
-  http_post2_ca_certs: { type: boolean }
-  http_post2_ignore_ssl_errors: { type: boolean }
-  http_post2_timeout: { type: integer }
+  http_post2_proxy: {type: string}
+  http_post2_ca_certs: {type: [boolean, string]}
+  http_post2_ignore_ssl_errors: {type: boolean}
+  http_post2_timeout: {type: integer}
 
   ### Jira
   jira_server: {type: string}
@@ -505,6 +542,7 @@ properties:
   mattermost_ignore_ssl_errors: {type: boolean}
   mattermost_username_override: {type: string}
   mattermost_channel_override: *arrayOfString
+  mattermost_emoji_override: {type: string}
   mattermost_icon_url_override: {type: string}
   mattermost_msg_pretext: {type: string}
   mattermost_msg_color: {enum: [good, warning, danger]}
@@ -531,7 +569,7 @@ properties:
   ms_teams_alert_facts: *arrayOfMsTeamsFacts
   ms_teams_attach_kibana_discover_url: {type: boolean}
   ms_teams_kibana_discover_title: {type: string}
-  ms_teams_ca_certs: {type: boolean}
+  ms_teams_ca_certs: {type: [boolean, string]}
   ms_teams_ignore_ssl_errors: {type: boolean}
 
   ### Opsgenie
@@ -593,7 +631,7 @@ properties:
   rocket_chat_attach_kibana_discover_url: {type: boolean}
   rocket_chat_kibana_discover_color: {type: string}
   rocket_chat_kibana_discover_title: {type: string}
-  rocket_chat_ca_certs: {type: boolean}
+  rocket_chat_ca_certs: {type: [boolean, string]}
   rocket_chat_ignore_ssl_errors: {type: boolean}
   rocket_chat_timeout: {type: integer}
 
@@ -633,7 +671,7 @@ properties:
   slack_attach_jira_ticket_url: {type: boolean}
   slack_jira_ticket_color: {type: string}
   slack_jira_ticket_title: {type: string}
-  slack_ca_certs: {type: boolean}
+  slack_ca_certs: {type: [boolean, string]}
   slack_footer: {type: string}
   slack_footer_icon: {type: string}
   slack_image_url: {type: string}

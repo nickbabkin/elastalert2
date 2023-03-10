@@ -66,6 +66,8 @@ Rule Configuration Cheat Sheet
 +--------------------------------------------------------------+           |
 | ``kibana_password`` (string, no default)                     |           |
 +--------------------------------------------------------------+           |
+| ``kibana_verify_certs`` (boolean, default True)              |           |
++--------------------------------------------------------------+           |
 | ``generate_kibana_discover_url`` (boolean, default False)    |           |
 +--------------------------------------------------------------+           |
 | ``shorten_kibana_discover_url`` (boolean, default False)     |           |
@@ -87,6 +89,8 @@ Rule Configuration Cheat Sheet
 | ``use_local_time`` (boolean, default True)                   |           |
 +--------------------------------------------------------------+           |
 | ``realert`` (time, default: 1 min)                           |           |
++--------------------------------------------------------------+           |
+| ``realert_key`` (string, defaults to the rule name)          |           |
 +--------------------------------------------------------------+           |
 | ``exponential_realert`` (time, no default)                   |           |
 +--------------------------------------------------------------+           |
@@ -127,6 +131,8 @@ Rule Configuration Cheat Sheet
 | ``timestamp_format`` (string, default "%Y-%m-%dT%H:%M:%SZ")  |           |
 +--------------------------------------------------------------+           |
 | ``timestamp_format_expr`` (string, no default )              |           |
++--------------------------------------------------------------+           |
+| ``timestamp_to_datetime_format_expr`` (string, no default )  |           |
 +--------------------------------------------------------------+           |
 | ``_source_enabled`` (boolean, default True)                  |           |
 +--------------------------------------------------------------+           |
@@ -274,6 +280,10 @@ index
 ``index: my-index-*`` which will match ``my-index-2014-10-05``. You can also use a format string containing
 ``%Y`` for year, ``%m`` for month, and ``%d`` for day. To use this, you must also set ``use_strftime_index`` to true. (Required, string, no default)
 
+For example, Separate multiple indices with commas.::
+
+    index: topbeat-*,packetbeat-*
+
 name
 ^^^^
 
@@ -305,7 +315,8 @@ import
 
 ``import``: If specified includes all the settings from this yaml file. This allows common config options to be shared. Note that imported files that aren't
 complete rules should not have a ``.yml`` or ``.yaml`` suffix so that ElastAlert 2 doesn't treat them as rules. Filters in imported files are merged (ANDed)
-with any filters in the rule. You can only have one import per rule, though the imported file can import another file or multiple files, recursively.
+with any filters in the rule. You can have one import per rule (value is string) or several imports per rule (value is a list of strings).
+The imported file can import another file or multiple files, recursively.
 The filename can be an absolute path or relative to the rules directory. (Optional, string or array of strings, no default)
 
 use_ssl
@@ -489,6 +500,12 @@ This is applied to the time the alert is sent, not to the time of the event. It 
 that if ElastAlert 2 is run over a large time period which triggers many matches, only the first alert will be sent by default. If you want
 every alert, set realert to 0 minutes. (Optional, time, default 1 minute)
 
+realert_key
+^^^^^^^^^^^
+
+``realert_key``: This option allows you to customize the key for ``realert``.  The default is the rule name, but if you have multiple rules that
+you would like to use the same key for you can set the ``realert_key`` to be the same in those rules. (Optional, string, default is the rule name)
+
 exponential_realert
 ^^^^^^^^^^^^^^^^^^^
 
@@ -606,6 +623,11 @@ This value is only used if ``shorten_kibana_discover_url`` is true.
 
 (Optional, string, no default)
 
+kibana_verify_certs
+^^^^^^^^^^^^^^^^^^^
+
+``kibana_verify_certs``: Whether or not to verify TLS certificates when querying Kibana. (Optional, boolean, default True)
+
 generate_kibana_discover_url
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -674,7 +696,7 @@ kibana_discover_version
 The currently supported versions of Kibana Discover are:
 
 - `7.0`, `7.1`, `7.2`, `7.3`, `7.4`, `7.5`, `7.6`, `7.7`, `7.8`, `7.9`, `7.10`, `7.11`, `7.12`, `7.13`, `7.14`, `7.15`, `7.16`, `7.17`
-- `8.0`, `8.1`, `8.2`, `8.3`, `8.4`
+- `8.0`, `8.1`, `8.2`, `8.3`, `8.4`, `8.5`, `8.6`
 
 ``kibana_discover_version: '7.15'``
 
@@ -809,7 +831,7 @@ timestamp_format_expr
 ^^^^^^^^^^^^^^^^^^^^^
 
 ``timestamp_format_expr``: In case Elasticsearch used custom date format for date type field, this option provides a way to adapt the
-value obtained converting a datetime through ``timestamp_format``, when the format cannot match perfectly what defined in Elastisearch.
+value obtained converting a datetime through ``timestamp_format``, when the format cannot match perfectly what defined in Elasticsearch.
 When set, this option is evaluated as a Python expression along with a *globals* dictionary containing the original datetime instance
 named ``dt`` and the timestamp to be refined, named ``ts``. The returned value becomes the timestamp obtained from the datetime.
 For example, when the date type field in Elasticsearch uses milliseconds (``yyyy-MM-dd'T'HH:mm:ss.SSS'Z'``) and ``timestamp_format``
@@ -817,6 +839,17 @@ option is ``'%Y-%m-%dT%H:%M:%S.%fZ'``, Elasticsearch would fail to parse query t
 it gets 6 digits instead of 3 - since the ``%f`` placeholder stands for microseconds for Python *strftime* method calls.
 Setting ``timestamp_format_expr: 'ts[:23] + ts[26:]'`` will truncate the value to milliseconds granting Elasticsearch compatibility.
 This option is only valid if ``timestamp_type`` set to ``custom``.
+(Optional, string, no default).
+
+timestamp_to_datetime_format_expr
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+``timestamp_to_datetime_format_expr``: In the same spirit as timestamp_format_expr, in case Elasticsearch used custom date format for date type field,
+this option provides a way to adapt the value (as a string) returned by an Elasticsearch query before converting it into a datetime used by elastalert.
+The changes are applied before converting the timestamp string to a datetime using ``timestamp_format``. This is useful when the format cannot match perfectly what is returned by Elasticsearch. When set, this option is evaluated as a Python expression along with a *globals* dictionary containing the original timestamp to be refined (as a string) named ``ts``. The returned value will be parse into a python datetime using the previously defined format (or using the default '%Y-%m-%dT%H:%M:%SZ').
+
+For example, when the date type field returned by Elasticsearch uses nanoseconds (``yyyy-MM-dd'T'HH:mm:ss.SSS.XXXXXX``) and ``timestamp_format``
+option is ``'%Y-%m-%dT%H:%M:%S.%f'`` (ns are not supported in python datetime.datetime.strptime), Elasticsearch would fail to parse the timestamp terms as they contain nanoseconds values - that is it gets 3 additional digits that can't be parsed, throwing the exception``ValueError: unconverted data remains: XXX``. Setting ``timestamp_to_datetime_format_expr: 'ts[:23]'`` will truncate the value to milliseconds, allowing a good conversion in a datetime object. This option is only valid if ``timestamp_type`` set to ``custom``. 
 (Optional, string, no default).
 
 _source_enabled
@@ -1462,6 +1495,7 @@ or
       - exotel
       - gitter
       - googlechat
+      - gelf
       - hivealerter
       - jira
       - linenotify
@@ -1735,7 +1769,7 @@ Optional:
 
 ``alertmanager_proxy``: By default ElastAlert 2 will not use a network proxy to send notifications to Alertmanager. Set this option using ``hostname:port`` if you need to use a proxy. only supports https.
 
-``alertmanager_ca_certs``: Set this option to ``True`` if you want to validate the SSL certificate.
+``alertmanager_ca_certs``: Set this option to ``True`` or a path to a CA cert bundle or directory (eg: ``/etc/ssl/certs/ca-certificates.crt``) to validate the SSL certificate.
 
 ``alertmanager_ignore_ssl_errors``: By default ElastAlert 2 will verify SSL certificate. Set this option to ``True`` if you want to ignore SSL errors.
 
@@ -1759,6 +1793,44 @@ Example usage::
   alertmanager_fields:
     msg: "message"
     log: "@log_name"
+
+Additional explanation:
+
+ElastAlert 2 can send two categories of data to Alertmanager: labels and annotations
+
+Labels are sent as either static values or a single field value lookup. So if you specify the following::
+
+    alertmanager_labels:
+      someStaticLabel: "Verify this issue"
+      anotherStaticLabel: "someone@somewhere.invalid"
+
+    alertmanager_fields:
+      myLabelName: someElasticFieldName
+      anotherLabel: anotherElasticFieldName
+
+The first labels will be static, but the two field will be replaced with the corresponding field values from the Elastic record that triggered the alert, and then merged back into the list of labels sent to Alertmanager.
+
+Annotations are slightly different. You can have many static (hardcoded) annotations and only two annotations that will be formatted according to the `alert_text` and `alert_subject` [documentation](https://elastalert2.readthedocs.io/en/latest/ruletypes.html#alert-subject). 
+
+For example::
+
+    alertmanager_annotations:
+      someStaticAnnotation: "This is a static annotation value, it never changes"
+      severity: P3
+
+    alertmanager_alert_subject_labelname: myCustomAnnotationName1
+    alertmanager_alert_text_labelname: myCustomAnnotationName2
+
+    alert_subject: "Host {0} has status {1}"
+    alert_subject_args:
+    - http_host
+    - status
+
+    alert_text: "URL {0} has {1} matches"
+    alert_text_type: alert_text_only
+    alert_text_args:
+    - uri
+    - num_matches
 
 AWS SES (Amazon Simple Email Service)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -2279,6 +2351,50 @@ Optional:
 
 ``googlechat_footer_kibanalink``: URL to Kibana to include in the card footer. (Only used if format=card)
 
+``googlechat_proxy``: By default ElastAlert 2 will not use a network proxy to send notifications to GoogleChat. Set this option using ``hostname:port`` if you need to use a proxy. only supports https.
+
+Graylog GELF
+~~~~~~~~~~~~
+GELF alerter will send a custom message to a Graylog GELF input (HTTP/TCP). Alert payload content you form with key-value pairs.
+
+The alerter requires the following options:
+
+``gelf_type``: Type of your Graylog GELF Input. How available 'http' or 'tcp'.
+
+And in case of HTTP:
+
+``gelf_endpoint``: Link to GELF HTTP Input as an example: 'http://example.com/gelf' (Only used if gelf_type=http)
+
+Or next if selected TCP:
+
+``gelf_host``: Graylog server address where Input launched. (Only used if gelf_type=tcp)
+
+``gelf_port``: Port, specified for Input. (Only used if gelf_type=tcp)
+
+``gelf_payload``: Main message body. Working as key-value, where the key is your custom name and value - data from elasticsearch message. Name of alert will write to beginning of the message.
+
+Example usage::
+
+    alert:
+      - gelf
+    gelf_type: http
+    gelf_endpoint: http://example.com:12201/gelf
+    gelf_payload:
+      username: user
+      src_ip: source_ip
+
+Optional:
+
+``gelf_log_level``: Standard syslog severity levels. By default set 5 (Notice)
+
+``gelf_http_headers``: Additional headers. (Only used if gelf_type=http)
+
+``gelf_ca_cert``: Path to custom CA certificate.
+
+``gelf_http_ignore_ssl_errors``: Ignore ssl error. (Only used if gelf_type=http)
+
+``gelf_timeout``: Custom timeout.
+
 HTTP POST
 ~~~~~~~~~
 
@@ -2302,7 +2418,7 @@ Optional:
 
 ``http_post_timeout``: The timeout value, in seconds, for making the post. The default is 10. If a timeout occurs, the alert will be retried next time elastalert cycles.
 
-``http_post_ca_certs``: Set this option to ``True`` if you want to validate the SSL certificate.
+``http_post_ca_certs``: Set this option to ``True`` or a path to a CA cert bundle or directory (eg: ``/etc/ssl/certs/ca-certificates.crt``) to validate the SSL certificate.
 
 ``http_post_ignore_ssl_errors``: By default ElastAlert 2 will verify SSL certificate. Set this option to ``True`` if you want to ignore SSL errors.
 
@@ -2329,11 +2445,11 @@ Required:
 
 Optional:
 
-``http_post2_payload``: List of keys:values to use for the payload of the HTTP Post. You can use {{ field }} (Jinja2 template) in the key and the value to reference any field in the matched events (works for nested ES fields and nested payload keys). If not defined, all the Elasticsearch keys will be sent. Ex: `"description_{{ my_field }}": "Type: {{ type }}\\nSubject: {{ title }}"`.
+``http_post2_payload``: A JSON string or list of keys:values to use for the payload of the HTTP Post. You can use {{ field }} (Jinja2 template) in the key and the value to reference any field in the matched events (works for nested ES fields and nested payload keys). If not defined, all the Elasticsearch keys will be sent. Ex: `"description_{{ my_field }}": "Type: {{ type }}\\nSubject: {{ title }}"`. When field names use dot notation or reserved characters, _data can be used to access these fields. If _data conflicts with your top level data, use jinja_root_name to change its name.
 
 ``http_post2_raw_fields``: List of keys:values to use as the content of the POST. Example - ip:clientip will map the value from the clientip field of Elasticsearch to JSON key named ip. This field overwrite the keys with the same name in `http_post2_payload`.
 
-``http_post2_headers``: List of keys:values to use for as headers of the HTTP Post. You can use {{ field }} (Jinja2 template) in the key and the value to reference any field in the matched events (works for nested fields). Ex: `"Authorization": "{{ user }}"`. Headers `"Content-Type": "application/json"` and `"Accept": "application/json;charset=utf-8"` are present by default, you can overwrite them if you think this is necessary.
+``http_post2_headers``: A JSON string or list of keys:values to use for as headers of the HTTP Post. You can use {{ field }} (Jinja2 template) in the key and the value to reference any field in the matched events (works for nested fields). Ex: `"Authorization": "{{ user }}"`. Headers `"Content-Type": "application/json"` and `"Accept": "application/json;charset=utf-8"` are present by default, you can overwrite them if you think this is necessary. When field names use dot notation or reserved characters, _data can be used to access these fields. If _data conflicts with your top level data, use jinja_root_name to change its name.
 
 ``http_post2_proxy``: URL of proxy, if required. only supports https.
 
@@ -2341,9 +2457,35 @@ Optional:
 
 ``http_post2_timeout``: The timeout value, in seconds, for making the post. The default is 10. If a timeout occurs, the alert will be retried next time elastalert cycles.
 
-``http_post2_ca_certs``: Set this option to ``True`` if you want to validate the SSL certificate.
+``http_post2_ca_certs``: Set this option to ``True`` or a path to a CA cert bundle or directory (eg: ``/etc/ssl/certs/ca-certificates.crt``) to validate the SSL certificate.
 
 ``http_post2_ignore_ssl_errors``: By default ElastAlert 2 will verify SSL certificate. Set this option to ``True`` if you want to ignore SSL errors.
+
+.. note:: Due to how values are rendered to JSON, the http_post2_headers and http_post2_payload fields require single quotes where quotes are required for Jinja templating. This only applies when using the YAML key:value pairs. Any quotes can be used with the new JSON string format. See below for examples of how to properly use quotes as well as an example of the new JSON string formatting.
+
+Incorrect usage with double quotes::
+
+    alert: post2
+    http_post2_url: "http://example.com/api"
+    http_post2_payload:
+      # this will result in an error as " is escaped to \"
+      description: 'hello {{ _data["name"] }}'
+      # this will result in an error as " is escaped to \"
+      state: '{{ ["low","medium","high","critical"][event.severity] }}'
+    http_post2_headers:
+      authorization: Basic 123dr3234
+      X-custom-type: '{{type}}'
+
+Correct usage with single quotes::
+
+    alert: post2
+    http_post2_url: "http://example.com/api"
+    http_post2_payload:
+      description: hello {{ _data['name'] }}
+      state: "{{ ['low','medium','high','critical'][event.severity] }}"
+    http_post2_headers:
+      authorization: Basic 123dr3234
+      X-custom-type: '{{type}}'
 
 Example usage::
 
@@ -2357,6 +2499,27 @@ Example usage::
     http_post2_headers:
       authorization: Basic 123dr3234
       X-custom-type: {{type}}
+
+Example usage with json string formatting::
+
+    alert: post2
+    jinja_root_name: _new_root
+    http_post2_url: "http://example.com/api"
+    http_post2_payload: |
+      {
+        "description": "An event came from IP {{ _new_root["client.ip"] }}",
+        "username": "{{ _new_root['username'] }}"
+        {%- for k, v in some_field.items() -%}
+        ,"{{ k }}": "changed_{{ v }}"
+        {%- endfor -%}
+      }
+    http_post2_raw_fields:
+      ip: clientip
+    http_post2_headers: |
+      {
+        "authorization": "Basic 123dr3234",
+        "X-custom-{{key}}": "{{type}}"
+      }
 
 Jira
 ~~~~
@@ -2377,13 +2540,13 @@ This alert requires four additional options:
 
   For an example Jira account file, see ``examples/rules/jira_acct.yaml``. The account file is a YAML formatted file. 
 
-  When using user/password authentication, the Jira account file must contain two fields:
+  When using user/password authentication, or when using Jira Cloud the Jira account file must contain two fields:
 
   ``user``: The username to authenticate with Jira.
 
-  ``password``: The password to authenticate with Jira.
+  ``password``: The password to authenticate with Jira. Jira cloud users must specify the Jira Cloud API token for this value.
 
-  When using a Personal Access Token, the Jira account file must contain a single field:
+  When using a Personal Access Token, such as when using a locally hosted Jira installation, the Jira account file must contain a single field:
 
   ``apikey``: The Personal Access Token for authenticating with Jira.
 
@@ -2510,8 +2673,11 @@ Optional:
 
 ``mattermost_channel_override``: Incoming webhooks have a default channel, but it can be overridden. A public channel can be specified "#other-channel", and a Direct Message with "@username".
 
-``mattermost_icon_url_override``: By default ElastAlert 2 will use the default webhook icon when posting to the channel. You can provide icon_url to use custom image.
-Provide absolute address of the picture or Base64 data url.
+``mattermost_emoji_override``: By default ElastAlert 2 will use the ``:ghost:`` emoji when posting to the channel. You can use a different emoji per
+ElastAlert 2 rule. Any Apple emoji can be used, see http://emojipedia.org/apple/ . If mattermost_icon_url_override parameter is provided, emoji is ignored.
+
+``mattermost_icon_url_override``: By default ElastAlert 2 will use the ``:ghost:`` emoji when posting to the channel. You can provide icon_url to use custom image.
+Provide absolute address of the pciture.
 
 ``mattermost_msg_pretext``: You can set the message attachment pretext using this option.
 
@@ -2632,7 +2798,7 @@ Example ms_teams_attach_kibana_discover_url, ms_teams_kibana_discover_title::
     # (Optional)
     ms_teams_kibana_discover_title: "Discover in Kibana"
 
-``ms_teams_ca_certs``: Set this option to ``True`` if you want to validate the SSL certificate.
+``ms_teams_ca_certs``: Set this option to ``True`` or a path to a CA cert bundle or directory (eg: ``/etc/ssl/certs/ca-certificates.crt``) to validate the SSL certificate.
 
 ``ms_teams_ignore_ssl_errors``: By default ElastAlert 2 will verify SSL certificate. Set this option to ``True`` if you want to ignore SSL errors.
 
@@ -2821,7 +2987,7 @@ ElastAlert 2 rule. Any Apple emoji can be used, see http://emojipedia.org/apple/
 
 ``rocket_chat_proxy``: By default ElastAlert 2 will not use a network proxy to send notifications to Rocket.Chat. Set this option using ``hostname:port`` if you need to use a proxy. only supports https.
 
-``rocket_chat_ca_certs``: Set this option to ``True`` if you want to validate the SSL certificate.
+``rocket_chat_ca_certs``: Set this option to ``True`` or a path to a CA cert bundle or directory (eg: ``/etc/ssl/certs/ca-certificates.crt``) to validate the SSL certificate.
 
 ``rocket_chat_ignore_ssl_errors``: By default ElastAlert 2 will verify SSL certificate. Set this option to ``True`` if you want to ignore SSL errors.
 
@@ -3018,7 +3184,7 @@ Example slack_attach_kibana_discover_url, slack_kibana_discover_color, slack_kib
     slack_kibana_discover_color: "#ec4b98"
     slack_kibana_discover_title: "Discover in Kibana"
 
-``slack_ca_certs``: Set this option to ``True`` if you want to validate the SSL certificate.
+``slack_ca_certs``: Set this option to ``True`` or a path to a CA cert bundle or directory (eg: ``/etc/ssl/certs/ca-certificates.crt``) to validate the SSL certificate.
 
 ``slack_footer``: Add a static footer text for alert. Defaults to "".
 
@@ -3210,8 +3376,9 @@ Only ``hive_apikey`` is required, ``hive_host`` and ``hive_port`` default to ``h
 
 ``hive_alert_config``: Configuration options for the alert, see example below for structure.
 
-If not supplied, the alert title and description will be populated from the ElastAlert 2 default
-``title`` and ``alert_text`` fields, including any defined ``alert_text_args``.
+``source``: Text content to use for TheHive event's "source" field. See the optional ``source_args`` parameter for dynamically formatting this content with dynamic lookup values.
+
+``type`` Text content to use for TheHive event's "type" field. See the optional ``type_args`` parameter for dynamically formatting this content with dynamic lookup values.
 
 Optional:
 
@@ -3235,8 +3402,17 @@ The tlp, message, and tags fields are optional for each observable. If not speci
 
 ``hive_verify``: Whether or not to enable SSL certificate validation. Defaults to False.
 
-``description_args``: can be used to call rule and match fileds in the description of the alert in TheHive
-``description_missing_value``: Text to replace any match field not found when formating the ``description``. Defaults to ``<MISSING VALUE>``.
+``description_args``: can be used to format the description field with additional rule and match field lookups. Note that the description will be initially populated from the ElastAlert 2 default ``alert_text`` fields, including any defined ``alert_text_args``. See the "Alert Content" section for more information on the default formatting.
+
+``description_missing_value``: Text to replace any match field not found when formatting the ``description``. Defaults to ``<MISSING VALUE>``.
+
+``source_args``: List of parameters to format into the ``source`` text content, with values originating from the first match event.
+
+``title``: Text content to use for TheHive event's "title" field. This will override the default alert title generated from the ``alert_subject`` and associated arg parameters. See the "Alert Subject" section for more information on the default formatting.
+
+``title_args``: List of additional args to format against the "title" content. If the title argument is not provided then these optional arguments will be formatted against the already formatted title generated from the ``alert_subject`` and related parameters. This means that a two-phased formatting potentially could be utilized in very specific configuration scenarios.  See the "Alert Subject" section for more information on the default formatting. The values will be used from the first match event.
+
+``type_args``: List of parameters to format into the ``type`` text content, with values originating from the first match event.
 
 Example usage::
 
@@ -3258,13 +3434,16 @@ Example usage::
       follow: True
       severity: 2
       status: 'New'
-      source: 'elastalert'
+      source: 'src-{}'
+      source_args: [ data.source ]
       description_args: [ name, description]
       description: '{0} : {1}'
       tags: ['tag1', 'tag2']
-      title: 'Title'
+      title: 'Title {}'
+      title_args: [ data.title ]
       tlp: 3
-      type: 'external'
+      type: 'type-{}'
+      type_args: [ data.type ]
 
     hive_observable_data_mapping:
       - domain: agent.hostname

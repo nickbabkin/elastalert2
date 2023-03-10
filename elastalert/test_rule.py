@@ -14,7 +14,6 @@ from unittest import mock
 
 from elastalert.config import load_conf
 from elastalert.elastalert import ElastAlerter
-from elastalert.util import EAException
 from elastalert.util import elasticsearch_client
 from elastalert.util import lookup_es_key
 from elastalert.util import ts_now
@@ -354,6 +353,8 @@ class MockElastAlerter(object):
             if not self.data:
                 return None
             try:
+                if isinstance(self.data, dict):
+                    self.data = [self.data]
                 self.data.sort(key=lambda x: x[timestamp_field])
                 self.starttime = self.str_to_ts(self.data[0][timestamp_field])
                 self.endtime = self.str_to_ts(self.data[-1][timestamp_field]) + datetime.timedelta(seconds=1)
@@ -440,11 +441,8 @@ class MockElastAlerter(object):
             'buffer_time': {'minutes': 45},
             'scroll_keepalive': '30s'
         }
-        overwrites = {
-            'rules_loader': 'file',
-        }
 
-        conf = load_conf(self.args, defaults, overwrites)
+        conf = load_conf(self.args, defaults)
         rule_yaml = conf['rules_loader'].load_yaml(self.args.file)
         conf['rules_loader'].load_options(rule_yaml, conf, self.args.file)
 
