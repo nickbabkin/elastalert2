@@ -39,7 +39,7 @@ image:
   # docker image
   repository: jertel/elastalert2
   # docker image tag
-  tag: 2.10.0
+  tag: 2.10.1
   pullPolicy: IfNotPresent
   pullSecret: ""
 
@@ -91,6 +91,9 @@ optEnv: []
 
 ## Specify optional additional containers to run alongside the Elastalert2 container.
 extraContainers: []
+
+## Specify optional additional initContainers to run prior to the Elastalert2 container.
+extraInitContainers: []
 
 extraConfigOptions: {}
   # # Options to propagate to all rules, e.g. a common slack_webhook_url or kibana_url
@@ -358,7 +361,7 @@ metrics:
     ##   release: prometheus-operator
     additionalLabels: {}
 
-    ## @param metrics.prometheusRule.rules Prometheus Rules for Thanos components
+    ## @param metrics.prometheusRule.rules Prometheus Rules for ElastAlert 2.
     ## These are just examples rules, please adapt them to your needs.
     ##    rules: |-
     ##        groups:

@@ -350,6 +350,19 @@ ca_certs
 
 ``ca_certs``: Path to a CA cert bundle to use to verify SSL connections (Optional, string, no default)
 
+
+disable_rules_on_error
+^^^^^^^^^^^^^^^^^^^^^^
+
+``disable_rules_on_error``: If true, ElastAlert 2 will disable rules which throw uncaught (not EAException) exceptions. It
+will upload a traceback message to ``elastalert_metadata`` and if ``notify_email`` is set, send an email notification. The
+rule will no longer be run until either ElastAlert 2 restarts or the rule file has been modified. This defaults to ``True``.
+
+es_conn_timeout
+^^^^^^^^^^^^^^^
+
+``es_conn_timeout``: Optional; sets timeout for connecting to and reading from ``es_host``; defaults to ``20``.
+
 es_username
 ^^^^^^^^^^^
 
@@ -640,17 +653,24 @@ This setting requires the following settings are also configured:
 
 ``generate_kibana_discover_url: true``
 
-Example usage::
+Example kibana_discover_app_url only usage::
 
-    generate_kibana_discover_url: True
+    generate_kibana_discover_url: true
     kibana_discover_app_url: "http://localhost:5601/app/discover#/"
     kibana_discover_index_pattern_id: "4babf380-c3b1-11eb-b616-1b59c2feec54"
     kibana_discover_version: "7.15"
-    kibana_discover_from_timedelta:
-      minutes: 10
-    kibana_discover_to_timedelta:
-      minutes: 10
-    alert_text: '{0}'
+    alert_text: '{}'
+    alert_text_args: [ kibana_discover_url ]
+    alert_text_type: alert_text_only
+
+Example kibana_url + kibana_discover_app_url usage::
+
+    generate_kibana_discover_url: true
+    kibana_url: "http://localhost:5601/"
+    kibana_discover_app_url: "app/discover#/"
+    kibana_discover_index_pattern_id: "4babf380-c3b1-11eb-b616-1b59c2feec54"
+    kibana_discover_version: "7.15"
+    alert_text: '{}'
     alert_text_args: [ kibana_discover_url ]
     alert_text_type: alert_text_only
 
@@ -696,7 +716,7 @@ kibana_discover_version
 The currently supported versions of Kibana Discover are:
 
 - `7.0`, `7.1`, `7.2`, `7.3`, `7.4`, `7.5`, `7.6`, `7.7`, `7.8`, `7.9`, `7.10`, `7.11`, `7.12`, `7.13`, `7.14`, `7.15`, `7.16`, `7.17`
-- `8.0`, `8.1`, `8.2`, `8.3`, `8.4`, `8.5`, `8.6`
+- `8.0`, `8.1`, `8.2`, `8.3`, `8.4`, `8.5`, `8.6`, `8.7`
 
 ``kibana_discover_version: '7.15'``
 

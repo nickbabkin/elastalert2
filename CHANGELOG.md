@@ -7,8 +7,23 @@
 - TBD
 
 ## Other changes
+- [Kubernetes] Fix mistake introduced in #1141 related to initContainers - [#1145](https://github.com/jertel/elastalert2/pull/1145) - @aturpin1789
+- Add support for Kibana 8.7 for Kibana Discover - [#1153](https://github.com/jertel/elastalert2/pull/1153) - @nsano-rururu
+
+# 2.10.1
+
+## Breaking changes
+- None
+
+## New features
+- None
+
+## Other changes
 - Corrected alert bug when both top_count_keys and query_key are specified in a rule - [#1128](https://github.com/jertel/elastalert2/pull/1128) - @jertel
 - Fixed docker-compose detection logic from recent PR - [#1128](https://github.com/jertel/elastalert2/pull/1128) - @jertel
+- Upgrade pylint 2.15.5 to 2.17.0, pytest 7.2.0 to 7.2.2, pytest-xdist 3.1.0 to 3.2.0, sphinx 5.3.0 to 6.1.3, tox 3.27.1 to 3.28.0 - [#1131](https://github.com/jertel/elastalert2/pull/1131) - @nsano-rururu
+- Update Docs & FAQ(disable_rules_on_error, es_conn_timeout) - [#1133](https://github.com/jertel/elastalert2/pull/1133) - @nsano-rururu
+- [Kubernetes] Add extraInitContainers value to helm chart - [#1141](https://github.com/jertel/elastalert2/pull/1141) - @aturpin1789
 
 # 2.10.0
 
