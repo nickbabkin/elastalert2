@@ -63,6 +63,8 @@ class HiveAlerter(Alerter):
                     position += 1
             elif (isinstance(field['value'], int)):
                 value = field['value']
+                custom_fields[field['name']] = {'order': position, field['type']: value}
+                position += 1
             else:
                 continue
         return custom_fields
