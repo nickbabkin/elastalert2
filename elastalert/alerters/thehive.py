@@ -61,8 +61,10 @@ class HiveAlerter(Alerter):
                 if value is not None:
                     custom_fields[field['name']] = {'order': position, field['type']: value}
                     position += 1
-                else:
-                    continue
+            elif (isinstance(field['value'], int)):
+                value = field['value']
+            else:
+                continue
         return custom_fields
 
     def load_tags(self, tag_names: list, match: dict):
