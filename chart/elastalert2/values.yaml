@@ -6,11 +6,21 @@ commonLabels: {}
 commonAnnotations: {}
 appKubernetesIoComponent: elastalert2
 
+# Folder where Helm can find local rules prior to deployment to the k8s cluster. By default,
+# 'rules' folder must be located in the root of the chart directory. Note that this setting
+# will override the rules and secretRulesName values. Again, these rules are only read 
+# during the time of the chart deployment (installation) into the cluster.
+# rootRulesFolder: "rules"
+# enabledRules: ["deadman_slack", "deadman_pagerduty"]
+
 # number of replicas to run
 replicaCount: 1
 
 # number of helm release revisions to retain
 revisionHistoryLimit: 5
+
+# number of seconds for which a newly created Pod should be ready without any of its containers crashing, for it to be considered available.
+minReadySeconds: 5
 
 # Default internal between alert checks against the elasticsearch datasource, in minutes
 runIntervalMins: 1
@@ -39,11 +49,14 @@ image:
   # docker image
   repository: jertel/elastalert2
   # docker image tag
-  tag: 2.10.1
+  tag: 2.23.0
   pullPolicy: IfNotPresent
   pullSecret: ""
 
 resources: {}
+
+# Annotations to be added to deployment
+deploymentAnnotations: {}
 
 # Annotations to be added to pods
 podAnnotations: {}
@@ -205,6 +218,12 @@ rules: {}
   #   pagerduty:
   #   pagerduty_service_key: dummy
   #   pagerduty_client_name: ElastAlert Deadman Switch
+
+# Probes configuration
+livenessProbe:
+  enabled: false
+readinessProbe:
+  enabled: false
 
 serviceAccount:
   # Specifies whether a service account should be created

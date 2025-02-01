@@ -18,6 +18,7 @@ from elastalert.ruletypes import MetricAggregationRule
 from elastalert.ruletypes import NewTermsRule
 from elastalert.ruletypes import PercentageMatchRule
 from elastalert.ruletypes import RuleType
+from elastalert.ruletypes import SpikeMetricAggregationRule
 from elastalert.ruletypes import SpikeRule
 from elastalert.ruletypes import WhitelistRule
 from elastalert.util import dt_to_ts
@@ -250,6 +251,32 @@ def test_spike_deep_key():
     rule = SpikeRule(rules)
     rule.add_data([{'@timestamp': ts_to_dt('2015'), 'foo': {'bar': {'baz': 'LOL'}}}])
     assert 'LOL' in rule.cur_windows
+
+
+def test_spike_no_data():
+    rules = {'threshold_ref': 10,
+             'spike_height': 2,
+             'timeframe': datetime.timedelta(seconds=10),
+             'spike_type': 'both',
+             'timestamp_field': '@timestamp',
+             'query_key': 'foo.bar.baz',
+             'field_value': None}
+    rule = SpikeRule(rules)
+    result = rule.find_matches(1, None)
+    assert not result
+
+
+def test_spike_no_ref_data():
+    rules = {'threshold_ref': 10,
+             'spike_height': 2,
+             'timeframe': datetime.timedelta(seconds=10),
+             'spike_type': 'both',
+             'timestamp_field': '@timestamp',
+             'query_key': 'foo.bar.baz',
+             'field_value': None}
+    rule = SpikeRule(rules)
+    result = rule.find_matches(None, 1)
+    assert not result
 
 
 def test_spike():
@@ -1400,3 +1427,29 @@ def test_comparerule_compare():
         assert False
     except NotImplementedError:
         assert True
+
+
+def test_spike_percentiles():
+    rules = {'buffer_time': datetime.timedelta(minutes=5),
+             'timeframe': datetime.timedelta(minutes=5),
+             'timestamp_field': '@timestamp',
+             'metric_agg_type': 'percentiles',
+             'metric_agg_key': 'bytes',
+             'percentile_range': 95,
+             'spike_type': 'up',
+             'spike_height': 1.5,
+             'min_threshold': 0.0}
+
+    rule = SpikeMetricAggregationRule(rules)
+
+    payload1 = {"metric_bytes_percentiles": {"values": {"95.0": 0.0}}}
+    timestamp1 = datetime.datetime.now() - datetime.timedelta(minutes=600)
+    data1 = {timestamp1: payload1}
+    rule.add_aggregation_data(data1)
+    assert len(rule.matches) == 0
+
+    payload2 = {"metric_bytes_percentiles": {"values": {"95.0": 9879.0}}}
+    timestamp2 = datetime.datetime.now()
+    data2 = {timestamp2: payload2}
+    rule.add_aggregation_data(data2)
+    assert len(rule.matches) == 1

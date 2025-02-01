@@ -65,8 +65,8 @@ def test_parse_deadline(spec, expected_deadline):
     # Note: Can't mock ``utcnow`` directly because ``datetime`` is a built-in.
     class MockDatetime(datetime):
         @staticmethod
-        def utcnow():
-            return dt('2017-07-07T10:00:00.000Z')
+        def now(tz=None):
+            return datetime(2017, 7, 7, 10, 0, 0)
 
     with mock.patch('datetime.datetime', MockDatetime):
         assert parse_deadline(spec) == expected_deadline
@@ -117,6 +117,7 @@ def test_looking_up_nested_keys(ea):
     }
 
     assert lookup_es_key(record, 'Fields.ts') == expected
+    assert lookup_es_key(record, 'Fields.ts.keyword') == expected
 
 
 def test_looking_up_nested_composite_keys(ea):
@@ -131,6 +132,25 @@ def test_looking_up_nested_composite_keys(ea):
     }
 
     assert lookup_es_key(record, 'Fields.ts.value') == expected
+    assert lookup_es_key(record, 'Fields.ts.value.keyword') == expected
+
+
+def test_looking_up_nested_composite_keys_with_fieldname_literary_containing_keyword(ea):
+    expected = 12467267
+    record = {
+        'Message': '12345',
+        'Fields': {
+            'ts': {
+                'value': {
+                    'keyword': expected,
+                }
+            },
+            'severity': 'large',
+            'user': 'jimmay'
+        }
+    }
+
+    assert lookup_es_key(record, 'Fields.ts.value.keyword') == expected
 
 
 def test_looking_up_arrays(ea):
@@ -148,10 +168,14 @@ def test_looking_up_arrays(ea):
     assert lookup_es_key(record, 'flags[0]') == 1
     assert lookup_es_key(record, 'flags[1]') == 2
     assert lookup_es_key(record, 'objects[0]foo') == 'bar'
+    assert lookup_es_key(record, 'objects[0]foo.keyword') == 'bar'
     assert lookup_es_key(record, 'objects[1]foo[0]bar') == 'baz'
     assert lookup_es_key(record, 'objects[2]foo.bar') == 'baz'
+    assert lookup_es_key(record, 'objects[2]foo.bar.keyword') == 'baz'
     assert lookup_es_key(record, 'objects[1]foo[1]bar') is None
+    assert lookup_es_key(record, 'objects[1]foo[1]bar.keyword') is None
     assert lookup_es_key(record, 'objects[1]foo[0]baz') is None
+    assert lookup_es_key(record, 'objects[1]foo[0]baz.keyword') is None
     assert lookup_es_key(record, 'nested.foo[0]') == 'bar'
     assert lookup_es_key(record, 'nested.foo[1]') == 'baz'
 
@@ -243,6 +267,47 @@ def test_format_index():
                                                                            'logstash-2018.06.25',
                                                                            'logstash-2018.06.26']
     assert sorted(format_index(pattern2, date, date2, True).split(',')) == ['logstash-2018.25', 'logstash-2018.26']
+
+
+def test_format_hourly_index():
+    pattern = 'logstash-%Y.%m.%d.%H'
+    date = dt('2023-12-01T22:53:01Z')
+    date2 = dt('2023-12-02T00:10:01Z')
+    index_csv = format_index(pattern, date, date2, add_extra=False)
+    indexes = sorted(index_csv.split(','))
+    assert indexes == [
+        'logstash-2023.12.01.22',
+        'logstash-2023.12.01.23',
+        'logstash-2023.12.02.00'
+        ]
+
+
+def test_format_hourly_index_with_extra_index():
+    pattern = 'logstash-%Y.%m.%d.%H'
+    date = dt('2023-12-01T22:53:01Z')
+    date2 = dt('2023-12-02T00:10:01Z')
+    index_csv = format_index(pattern, date, date2, add_extra=True)
+    indexes = sorted(index_csv.split(','))
+
+    expected = [
+        'logstash-2023.12.01.21',  # added by add_extra=True
+        'logstash-2023.12.01.22',
+        'logstash-2023.12.01.23',
+        'logstash-2023.12.02.00',
+    ]
+
+    assert indexes == expected
+
+
+def test_format_index_with_static_throws_exception():
+    pattern = 'my-static-index-name'
+    date = dt('2023-12-01T22:53:01Z')
+    date2 = dt('2023-12-02T00:10:01Z')
+    works_when_add_extra_is_false = format_index(pattern, date, date2, add_extra=False)
+    assert works_when_add_extra_is_false
+    with pytest.raises(EAException) as e:
+        _ = format_index(pattern, date, date2, add_extra=True)
+    assert e.value.args[0] == "You cannot use a static index {} with search_extra_index".format(pattern)
 
 
 def test_should_scrolling_continue():

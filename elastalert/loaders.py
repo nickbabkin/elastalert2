@@ -25,6 +25,8 @@ import elastalert.alerters.gelf
 import elastalert.alerters.googlechat
 import elastalert.alerters.httppost
 import elastalert.alerters.httppost2
+import elastalert.alerters.iris
+import elastalert.alerters.lark
 import elastalert.alerters.line
 import elastalert.alerters.pagertree
 import elastalert.alerters.rocketchat
@@ -35,20 +37,24 @@ import elastalert.alerters.telegram
 import elastalert.alerters.thehive
 import elastalert.alerters.twilio
 import elastalert.alerters.victorops
+import elastalert.alerters.workwechat
 from elastalert import alerts
 from elastalert import enhancements
 from elastalert import ruletypes
 from elastalert.alerters.alertmanager import AlertmanagerAlerter
 from elastalert.alerters.email import EmailAlerter
 from elastalert.alerters.jira import JiraAlerter
+from elastalert.alerters.matrixhookshot import MatrixHookshotAlerter
 from elastalert.alerters.mattermost import MattermostAlerter
 from elastalert.alerters.opsgenie import OpsGenieAlerter
 from elastalert.alerters.pagerduty import PagerDutyAlerter
 from elastalert.alerters.slack import SlackAlerter
 from elastalert.alerters.sns import SnsAlerter
 from elastalert.alerters.teams import MsTeamsAlerter
+from elastalert.alerters.powerautomate import MsPowerAutomateAlerter
 from elastalert.alerters.zabbix import ZabbixAlerter
 from elastalert.alerters.tencentsms import TencentSMSAlerter
+from elastalert.alerters.indexer import IndexerAlerter
 from elastalert.util import dt_to_ts
 from elastalert.util import dt_to_ts_with_format
 from elastalert.util import dt_to_unix
@@ -107,6 +113,7 @@ class RulesLoader(object):
         'command': elastalert.alerters.command.CommandAlerter,
         'sns': SnsAlerter,
         'ms_teams': MsTeamsAlerter,
+        'ms_power_automate': MsPowerAutomateAlerter,
         'slack': SlackAlerter,
         'mattermost': MattermostAlerter,
         'pagerduty': PagerDutyAlerter,
@@ -126,11 +133,16 @@ class RulesLoader(object):
         'zabbix': ZabbixAlerter,
         'discord': elastalert.alerters.discord.DiscordAlerter,
         'dingtalk': elastalert.alerters.dingtalk.DingTalkAlerter,
+        'lark': elastalert.alerters.lark.LarkAlerter,
+        'workwechat': elastalert.alerters.workwechat.WorkWechatAlerter,
         'chatwork': elastalert.alerters.chatwork.ChatworkAlerter,
         'datadog': elastalert.alerters.datadog.DatadogAlerter,
         'ses': elastalert.alerters.ses.SesAlerter,
         'rocketchat': elastalert.alerters.rocketchat.RocketChatAlerter,
-        'gelf': elastalert.alerters.gelf.GelfAlerter
+        'gelf': elastalert.alerters.gelf.GelfAlerter,
+        'iris': elastalert.alerters.iris.IrisAlerter,
+        'indexer': IndexerAlerter,
+        'matrixhookshot': MatrixHookshotAlerter,
     }
 
     # A partial ordering of alert types. Relative order will be preserved in the resulting alerts list
@@ -173,7 +185,11 @@ class RulesLoader(object):
                 if rule['name'] in names:
                     raise EAException('Duplicate rule named %s' % (rule['name']))
             except EAException as e:
-                raise EAException('Error loading file %s: %s' % (rule_file, e))
+                if (conf.get('skip_invalid')):
+                    elastalert_logger.error(e)
+                    continue
+                else:
+                    raise EAException('Error loading file %s: %s' % (rule_file, e))
 
             rules.append(rule)
             names.append(rule['name'])
@@ -327,6 +343,10 @@ class RulesLoader(object):
                 rule['kibana_discover_from_timedelta'] = datetime.timedelta(**rule['kibana_discover_from_timedelta'])
             if 'kibana_discover_to_timedelta' in rule:
                 rule['kibana_discover_to_timedelta'] = datetime.timedelta(**rule['kibana_discover_to_timedelta'])
+            if 'opensearch_discover_from_timedelta' in rule:
+                rule['opensearch_discover_from_timedelta'] = datetime.timedelta(**rule['opensearch_discover_from_timedelta'])
+            if 'opensearch_discover_to_timedelta' in rule:
+                rule['opensearch_discover_to_timedelta'] = datetime.timedelta(**rule['opensearch_discover_to_timedelta'])
         except (KeyError, TypeError) as e:
             raise EAException('Invalid time format used: %s' % e)
 
@@ -347,6 +367,7 @@ class RulesLoader(object):
         rule.setdefault('description', "")
         rule.setdefault('jinja_root_name', "_data")
         rule.setdefault('query_timezone', "")
+        rule.setdefault('include_fields', None)
 
         # Set timestamp_type conversion function, used when generating queries and processing hits
         rule['timestamp_type'] = rule['timestamp_type'].strip().lower()
@@ -392,6 +413,9 @@ class RulesLoader(object):
 
         if 'include' in rule and type(rule['include']) != list:
             raise EAException('include option must be a list')
+
+        if 'include_fields' in rule and rule['include_fields'] is not None and type(rule['include_fields']) != list:
+            raise EAException('include_fields option must be a list')
 
         raw_query_key = rule.get('query_key')
         if isinstance(raw_query_key, list):

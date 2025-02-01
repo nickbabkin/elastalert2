@@ -1,14 +1,278 @@
 # 2.TBD.TBD
 
 ## Breaking changes
-- TBD
+- None
 
 ## New features
-- TBD
+- None
+
+## Other changes
+- None
+
+# 2.23.0
+
+## Breaking changes
+- None
+
+## New features
+- [Helm] Add optional liveness and readiness probe - [#1604](https://github.com/jertel/elastalert2/pull/1604) - @aizerin
+- Add `include_rule_params_in_matches` rule parameter to enable copying of specific rule params into match data - [#1605](https://github.com/jertel/elastalert2/pull/1605) - @jertel
+- [Helm] Add `--prometheus_addr` command line parameter to allow binding the Prometheus metrics server on a different host address - [#1608](https://github.com/jertel/elastalert2/pull/1608) - @tgxworld
+
+## Other changes
+- [Docs] Add missing documentation of the `aggregation_alert_time_compared_with_timestamp_field` option. - [#1588](https://github.com/jertel/elastalert2/pull/1588) - @nicolasnovelli
+- Fix linter error reporting about return type assignation in `elastalert/test_rule.py`. - [#1594](https://github.com/jertel/elastalert2/pull/1594) - @thican
+- Add support for Kibana 8.17 for Kibana Discover - [#1597](https://github.com/jertel/elastalert2/pull/1597) - @nsano-rururu
+- Resolve runtime deprecation warnings related to Elastic's 8.16 range filter changes - [#1599](https://github.com/jertel/elastalert2/pull/1599) - @jertel
+- Resolve test deprecation warnings related to prettytable enum changes - [#1599](https://github.com/jertel/elastalert2/pull/1599) - @jertel
+- Upgrade dependency pylint to 3.3.3 (build) - [#1599](https://github.com/jertel/elastalert2/pull/1599) - @jertel
+- Upgrade dependency pytest to 8.3.4 (build) - [#1599](https://github.com/jertel/elastalert2/pull/1599) - @jertel
+- Upgrade dependency pytest-cov to 6.0.0 (build) - [#1599](https://github.com/jertel/elastalert2/pull/1599) - @jertel
+- Upgrade dependency sphinx to 8.1.3 (build)  - [#1599](https://github.com/jertel/elastalert2/pull/1599) - @jertel
+- Upgrade dependency sphinx_rtd_theme to 3.0.2 (build) - [#1599](https://github.com/jertel/elastalert2/pull/1599) - @jertel
+- Upgrade dependency tox to 4.23.2 (build) - [#1599](https://github.com/jertel/elastalert2/pull/1599) - @jertel
+- Upgrade dependency apscheduler to 3.11.0 - [#1599](https://github.com/jertel/elastalert2/pull/1599) - @jertel
+- Upgrade dependency boto3 to 1.35.92 - [#1599](https://github.com/jertel/elastalert2/pull/1599) - @jertel
+- Upgrade dependency cffi to 1.17.1 - [#1599](https://github.com/jertel/elastalert2/pull/1599) - @jertel
+- Upgrade dependency croniter to 6.0.0 - [#1599](https://github.com/jertel/elastalert2/pull/1599) - @jertel
+- Upgrade dependency jinja2 to 3.1.5 - [#1599](https://github.com/jertel/elastalert2/pull/1599) - @jertel
+- Upgrade dependency jira to 3.8.0 - [#1599](https://github.com/jertel/elastalert2/pull/1599) - @jertel
+- Upgrade dependency jsonpointer to 3.0.0 - [#1599](https://github.com/jertel/elastalert2/pull/1599) - @jertel
+- Upgrade dependency jsonschema to 4.23.0 - [#1599](https://github.com/jertel/elastalert2/pull/1599) - @jertel
+- Upgrade dependency prettytable to 3.12.0 - [#1599](https://github.com/jertel/elastalert2/pull/1599) - @jertel
+- Upgrade dependency prometheus-client to 0.21.1 - [#1599](https://github.com/jertel/elastalert2/pull/1599) - @jertel
+- Upgrade dependency pyyaml to 6.0.2 - [#1599](https://github.com/jertel/elastalert2/pull/1599) - @jertel
+- Upgrade dependency requests to 2.32.3 - [#1599](https://github.com/jertel/elastalert2/pull/1599) - @jertel
+- Upgrade dependency stomp.py to 8.2.0 - [#1599](https://github.com/jertel/elastalert2/pull/1599) - @jertel
+- Upgrade dependency tencentcloud-sdk-python to 3.0.1295 - [#1599](https://github.com/jertel/elastalert2/pull/1599) - @jertel
+- Upgrade dependency twilio to 9.4.1 - [#1599](https://github.com/jertel/elastalert2/pull/1599) - @jertel
+- [Spike] Fixes spike rule error when no data exists in the current time window - [#1605](https://github.com/jertel/elastalert2/pull/1605) - @jertel
+- [Spike] Fixes spike rule error when no data exists in the reference time window - [#1610](https://github.com/jertel/elastalert2/pull/1610) - @jertel
+
+# 2.22.0
+
+## Breaking changes
+- Note that version 2.21 upgraded Python to 3.13 and unintentionally dropped support for Python 3.12. This release, restores support for Python 3.12, while continuing to use Python 3.13 in the official ElastAlert 2 Docker image. Python 3.12 support will be dropped in a future release. - [#1585](https://github.com/jertel/elastalert2/pull/1585) - @jertel
+
+## New features
+- None
+
+## Other changes
+- None
+
+# 2.21.0
+
+## Breaking changes
+- Be aware that this version dropped support for Python 3.12. It was re-added in the following release due to some distributions not yet supporting Python 3.13.
+
+## New features
+- [Notifications] System error notifications can now be delivered via the same set of alerters as rule alerts - [#1546](https://github.com/jertel/elastalert2/pull/1546) - @jertel
+- [Notifications] New config option `notify_all_errors` supports all system errors, including loss of data connectivity - [#1546](https://github.com/jertel/elastalert2/pull/1546) - @jertel
+
+## Other changes
+- [Docs] Mention the two available Spike-rule metrics that are add into the match record - [#1542](https://github.com/jertel/elastalert2/pull/1542) - @ulmako
+- [OpsGenie] Corrected spelling of the `opsgenie_default_receipients` configuration option to `opsgenie_default_recipients`. Both variations will continue to work and a warning message will notify affected users. [#1539](https://github.com/jertel/elastalert2/pull/1539) - @lstyles
+- [OpsGenie] Prevent templated `opsgenie_teams` and `opsgenie_recipients` from being overwritten with evaluated values first time an alert is sent. [#1540](https://github.com/jertel/elastalert2/issues/1540) [#1539](https://github.com/jertel/elastalert2/pull/1539) - @lstyles
+- [OpsGenie] Updated configuration schema with missing OpsGenie alerter properties. [#1543](https://github.com/jertel/elastalert2/pull/1543) - @lstyles
+- [Docs] Add missing documentation of the timestamp_field option - [#1544](https://github.com/jertel/elastalert2/pull/1544) - @apollolv
+- Add support for Kibana 8.14/8.15/8.16 for Kibana Discover - [#1547](https://github.com/jertel/elastalert2/pull/1547),[#1582](https://github.com/jertel/elastalert2/pull/1582) - @nsano-rururu, @jertel
+- Upgrade pylint 3.1.0 to 3.3.1, pytest 8.0.2 to 8.3.3, pytest-cov 4.1.0 to 5.0.0, pytest-xdist 3.5.0 to 3.6.1, sphinx 7.2.6 to 8.0.2, sphinx_rtd_theme 2.0.0 to 3.0.1, tox 4.13.0 to 4.21.2  - [#1550](https://github.com/jertel/elastalert2/pull/1550) - @nsano-rururu
+- Upgrade to Python 3.13 - [#1551](https://github.com/jertel/elastalert2/pull/1551) - @nsano-rururu
+- [OpsGenie] Support dynamic `opsgenie_addr` values - [#1563](https://github.com/jertel/elastalert2/pull/1563) - @mohamedelema17
+
+# 2.20.0
+
+## Breaking changes
+- Drop python3.9, python3.10, python3.11 from `python_requires` - [#1528](https://github.com/jertel/elastalert2/pull/1528) - @kmurphy4
+- [IRIS] Updated alert_title to leverage ElastAlert built-in ``create_title`` function. Updated alert_description to use ElastAlert2 built-in function ``create_alert_body`` if alert_description is not set within the rule - [#1532](https://github.com/jertel/elastalert2/pull/1532) - @bvirgilioamnh
+
+## New features
+- [MS Power Automate] New Alert Channel with Microsoft Power Automate - [#1505](https://github.com/jertel/elastalert2/pull/1505)  [#1513](https://github.com/jertel/elastalert2/pull/1513) [#1519](https://github.com/jertel/elastalert2/pull/1519) - @marssilva, @jertel
+- [Matrix Hookshot] New Alerter for sending alerts to Matrix via Hookshot - [#1525](https://github.com/jertel/elastalert2/pull/1525) - @jertel
+
+## Other changes
+- [Indexer] Fixed fields types error on instance indexer_alert_config in schema.yml - [#1499](https://github.com/jertel/elastalert2/pull/1499) - @olehpalanskyi
+- [IRIS] Changed alert_source field from static 'ElastAlert2' value to field iris_alert_source value with default of 'ElastAlert2' - [#1531](https://github.com/jertel/elastalert2/pull/1531) - @bvirgilioamnh
+- [IRIS] Fixed NoneType error raised in issue [#1457](https://github.com/jertel/elastalert2/issues/1457) - [#1533](https://github.com/jertel/elastalert2/pull/1533) - @bvirgilioamnh
+
+
+# 2.19.0
+
+## Breaking changes
+- None
+
+## New features
+- Add indexer alerter - [#1451](https://github.com/jertel/elastalert2/pull/1451) - @olehpalanskyi
+
+## Other changes
+- [Docs] Fixed typo in Alerta docs with incorrect number of seconds in a day. - @jertel
+- Update GitHub actions to avoid running publish workflows on forked branches. - @jertel
+- Rewrite `_find_es_dict_by_key` per [discussion #1450](https://github.com/jertel/elastalert2/discussions/1450) for fieldnames literally ending in `.keyword` [#1459](https://github.com/jertel/elastalert2/pull/1459) - @jmacdone @jertel
+
+# 2.18.0
+
+## Breaking changes
+- Renamed PR #1193's `fields` common rule option to `include_fields` due to collision with `new_term` rule type's existing `field` parameter - [#1408](https://github.com/jertel/elastalert2/pull/1408) - @jertel
+
+## New features
+- [Jira] Add ability to create a subtask, etc of an existing parent - [#1417](https://github.com/jertel/elastalert2/pull/1417) - @olehpalanskyi
+
+## Other changes
+- [workwechat] add workwechat msgtype - [#1369](https://github.com/jertel/elastalert2/pull/1369) - @bitqiu
+- [Pager Duty] Add options: pagerduty_ca_certs, pagerduty_ignore_ssl_errors - [#1418](https://github.com/jertel/elastalert2/pull/1418) - @kexin-zhai
+- Add support for Kibana 8.13 for Kibana Discover - [#1423](https://github.com/jertel/elastalert2/pull/1423) - @nsano-rururu
+- Support DingTalk robot, add sign security settings - [#1485](https://github.com/jertel/elastalert2/pull/1485) - @innerpeacez
+
+# 2.17.0
+
+## Breaking changes
+- None
+
+## New features
+- Add workwechat alerter - [#1367](https://github.com/jertel/elastalert2/pull/1367) - @wufeiqun
+
+## Other changes
+- [IRIS] Remove empty IOC in alerts that are not accepted by the API - [#1374](https://github.com/jertel/elastalert2/pull/1374) - @yaksnip425
+- Upgrade boto3 to 1.34.54 - [#1388](https://github.com/jertel/elastalert2/pull/1388) - @jertel
+- Upgrade croniter to 2.0.2 - [#1388](https://github.com/jertel/elastalert2/pull/1388) - @jertel
+- Upgrade jinja2 to 3.1.3 - [#1388](https://github.com/jertel/elastalert2/pull/1388) - @jertel
+- Upgrade jira to 3.6.0 - [#1388](https://github.com/jertel/elastalert2/pull/1388) - @jertel
+- Upgrade jsonschema to 4.21.1 - [#1388](https://github.com/jertel/elastalert2/pull/1388) - @jertel
+- Upgrade prettytable to 3.10.0 - [#1388](https://github.com/jertel/elastalert2/pull/1388) - @jertel
+- Upgrade prometheus-client to 0.20.0 - [#1388](https://github.com/jertel/elastalert2/pull/1388) - @jertel
+- Upgrade pylint to 3.1.0 - [#1388](https://github.com/jertel/elastalert2/pull/1388) - @jertel
+- Upgrade pytest to 8.0.2 - [#1388](https://github.com/jertel/elastalert2/pull/1388) - @jertel
+- Upgrade python-dateutil to 2.9.0.post0 - [#1388](https://github.com/jertel/elastalert2/pull/1388) - @jertel
+- Upgrade tencentcloud-sdk-python to 3.0.1098 - [#1388](https://github.com/jertel/elastalert2/pull/1388) - @jertel
+- Upgrade tox to 4.13.0 - [#1388](https://github.com/jertel/elastalert2/pull/1388) - @jertel
+- Upgrade twilio to 8.13.0 - [#1388](https://github.com/jertel/elastalert2/pull/1395) - @jertel
+- Removed explicit tzlocal lib dependency - [#1388](https://github.com/jertel/elastalert2/pull/1388) - @jertel
+
+# 2.16.0
+
+## Breaking changes
+- None
+
+## New features
+- [Telegram] Added new telegram_thread_id setting for sending alerts to different threads of supergroup/forum. - [#1319](https://github.com/jertel/elastalert2/pull/1319) - @polshe-v
+- Support hourly index patterns - [#1328](https://github.com/jertel/elastalert2/pull/1328) - @jmacdone
+
+## Other changes
+- Update setup.py & requirements.txt & requirements-dev.txt - [#1316](https://github.com/jertel/elastalert2/pull/1316) - @nsano-rururu
+- [Docs] Clarify how to reference query_key values in flatline alerts - [#1320](https://github.com/jertel/elastalert2/pull/1320) - @jertel
+- Fix percentiles aggregation type in Spike Metric Aggregation rules - [#1323](https://github.com/jertel/elastalert2/pull/1323) - @jertel
+- [Docs] Extend FAQ / troubleshooting section with information on Elasticsearch RBAC - [#1324](https://github.com/jertel/elastalert2/pull/1324) - @chr-b
+- Upgrade to Python 3.12 - [#1327](https://github.com/jertel/elastalert2/pull/1327) - @jertel
+- Correction in IRIS and GELF alerter [#1331](https://github.com/jertel/elastalert2/pull/1331) - @malinkinsa
+- Fix handing of compound_query_key values - [#1330](https://github.com/jertel/elastalert2/pull/1330) - @jmacdone
+- Fix handing raw_query_key and query_key values ending with .keyword- [#1330](https://github.com/jertel/elastalert2/pull/1330) - @jmacdone
+- [Docs] Fix broken search function caused by sphinx upgrade a few releases ago - [#1332](https://github.com/jertel/elastalert2/pull/1332) - @jertel
+- [Docs] Fix mismatch for parameter iris_customer_id - [1334](https://github.com/jertel/elastalert2/pull/1334) @malinkinsa
+- [IRIS] Make parameter iris_customer_id optional with default value - [1334](https://github.com/jertel/elastalert2/pull/1334) @malinkinsa
+- (Re)Implement `skip_invalid` to continue loading rules if one is invalid - [#1338](https://github.com/jertel/elastalert2/pull/1338) - @jertel
+- [Docs] Refactor the docs structure for improved ease-of-use - [#1337](https://github.com/jertel/elastalert2/pull/1337) - @jertel
+- [Email] Refactor SMTP cert/key usage to support Python 3.12 - [#1341](https://github.com/jertel/elastalert2/pull/1341) - @jertel
+- [IRIS] Fix schema.yaml(iris_url to iris_host) - [#1346](https://github.com/jertel/elastalert2/pull/1346) - @nsano-rururu
+- [IRIS] Fix issue with document with nested json inside. See [#1348](https://github.com/jertel/elastalert2/discussions/1348) - [#1352](https://github.com/jertel/elastalert2/pull/1352) - @malinkinsa
+- [Docs] Clarify `jinja_template_path` documentation - [20a05f9](https://github.com/jertel/elastalert2/commit/20a05f995f566f8719d6e4bf7b8a3977c7ab9e23) - @jertel
+- Add support for Kibana 8.12 for Kibana Discover - [#1364](https://github.com/jertel/elastalert2/pull/1364) - @nsano-rururu
+- Upgrade pylint 3.0.2 to 3.0.3, pytest 7.4.3 to 8.0.0, sphinx_rtd_theme 1.3.0 to 2.0.0, tox 4.11.3 to 4.12.1 - [#1365](https://github.com/jertel/elastalert2/pull/1365) - @nsano-rururu
+
+# 2.15.0
+
+## Breaking changes
+- None
+
+## New features
+- [Iris] Alerter added - [#1301](https://github.com/jertel/elastalert2/pull/1301) - @malinkinsa 
+- [Opensearch] Add the possibility to generate an opensearch discovery url - [#1310](https://github.com/jertel/elastalert2/pull/1310) - @luffynextgen
+
+## Other changes
+- Refactored FlatlineRule to make it more extensible - [#1291](https://github.com/jertel/elastalert2/pull/1291) - @rundef 
+- Add support for Kibana 8.11 for Kibana Discover - [#1305](https://github.com/jertel/elastalert2/pull/1305) - @nsano-rururu
+- Update docs - [#1311](https://github.com/jertel/elastalert2/pull/1311) - @nsano-rururu
+
+# 2.14.0
+
+## Breaking changes
+- None
+
+## New features
+- 'summary_table_type' property now supports 'html' format for aggregation tables - [#1260](https://github.com/jertel/elastalert2/pull/1260) - @jertel 
+- [Helm] Add support for custom deployment annotations - [#1271](https://github.com/jertel/elastalert2/pull/1271) - @victorpugin 
+
+## Other changes
+- [Helm] Expose minReadySeconds parameter to assist in detecting failed deployments - [#1243](https://github.com/jertel/elastalert2/pull/1243) - @alexku7 
+- [Helm] Fix commonLabels indentation for the deployment template - [#1250](https://github.com/jertel/elastalert2/pull/1250) - @dan-duffy 
+- Add support for Kibana 8.10 for Kibana Discover - [#1277](https://github.com/jertel/elastalert2/pull/1277) - @nsano-rururu
+- Upgrade pylint 2.17.4 to 2.17.5, pytest 7.3.1 to 7.4.2, sphinx 6.2.1 to 7.2.6, sphinx_rtd_theme 1.2.2 to 1.3.0 - [#1278](https://github.com/jertel/elastalert2/pull/1278) - @nsano-rururu
+- Fix issue with aggregated alerts not being sent - [#1285](https://github.com/jertel/elastalert2/pull/1285) - @jertel
+- Add support for [Lark](https://www.larksuite.com/en_us/) alerter - [#1282](https://github.com/jertel/elastalert2/pull/1282) - @seanyinx
+
+# 2.13.2
+
+## Breaking changes
+- None
+
+## New features
+- None
+
+## Other changes
+- [Helm] Fix chart indentation issue introduced in 2.13.1 - [#1239](https://github.com/jertel/elastalert2/pull/1239) - @jertel
+
+# 2.13.1
+
+## Breaking changes
+- None
+
+## New features
+- None
+
+## Other changes
+- [Helm] Add support for generating rule config from a directory of rules, during chart deployment - [#1236](https://github.com/jertel/elastalert2/pull/1236) - @mehrdad-khojastefar 
+- [AlertManager] Fix typo with new feature released in 2.13.0 - [#1237](https://github.com/jertel/elastalert2/pull/1237) - @eveningcafe
+
+# 2.13.0
+
+## Breaking changes
+- None
+
+## New features
+- [Alertmanager] Add alertmanager resolve timeout configuration option - [#1187](https://github.com/jertel/elastalert2/pull/1187) - @eveningcafe
+
+## Other changes
+- [Docs] Clarify docs to state that alert_time_limit should not be 0 - [#1208](https://github.com/jertel/elastalert2/pull/1208) - @jertel
+- Add support for Kibana 8.9 for Kibana Discover - [#1224](https://github.com/jertel/elastalert2/pull/1224) - @nsano-rururu
+- Remove docker image pin to outdated "buster" debian release - [24f794a](https://github.com/jertel/elastalert2/commit/24f794a) - @jertel
+
+# 2.12.0
+
+## Breaking changes
+- None
+
+## New features
+- Add initial support for EQL - [#1189](https://github.com/jertel/elastalert2/pull/1189) - @jertel
+- Add `fields` parameter to rules to be able to pull in runtimes fields, and more. [#1193](https://github.com/jertel/elastalert2/pull/1193) - @Goggin
+- Add EQL support to elastalert-test-rule utility - [#1195](https://github.com/jertel/elastalert2/pull/1195) - @jertel
+
+## Other changes
+- Add support for Kibana 8.8 for Kibana Discover - [#1184](https://github.com/jertel/elastalert2/pull/1184) - @nsano-rururu
+- Upgrade pylint 2.17.0 to 2.17.4, pytest 7.2.2 to 7.3.1, pytest-xdist 3.2.0 to 3.3.1, sphinx 6.1.3 to 6.2.1, sphinx_rtd_theme == 1.2.2 - [#1194](https://github.com/jertel/elastalert2/pull/1194) - @nsano-rururu
+- Upgrade to Tox 4 - [#1196](https://github.com/jertel/elastalert2/pull/1196) - @jertel
+- Log message when exiting due to --end param being in the past - [#1199](https://github.com/jertel/elastalert2/pull/1199) - @jertel
+
+# 2.11.0
+
+## Breaking changes
+- None
+
+## New features
+- None
 
 ## Other changes
 - [Kubernetes] Fix mistake introduced in #1141 related to initContainers - [#1145](https://github.com/jertel/elastalert2/pull/1145) - @aturpin1789
 - Add support for Kibana 8.7 for Kibana Discover - [#1153](https://github.com/jertel/elastalert2/pull/1153) - @nsano-rururu
+- [Docs] Add documentation for accessing subfields of array items - [#1166](https://github.com/jertel/elastalert2/pull/1166) - @jertel
 
 # 2.10.1
 

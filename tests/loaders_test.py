@@ -45,7 +45,8 @@ test_rule = {'es_host': 'test_host',
              'use_count_query': True,
              'email': 'test@test.test',
              'aggregation': {'hours': 2},
-             'include': ['comparekey', '@timestamp']}
+             'include': ['comparekey', '@timestamp'],
+             'include_fields': ['test_runtime_field']}
 
 test_args = mock.Mock()
 test_args.config = 'test_config'
@@ -275,6 +276,8 @@ def test_load_rules():
                 assert isinstance(rules['rules'][0]['alert'][0], elastalert.alerts.Alerter)
                 assert isinstance(rules['rules'][0]['timeframe'], datetime.timedelta)
                 assert isinstance(rules['run_every'], datetime.timedelta)
+                assert isinstance(rules['rules'][0]['include_fields'], list)
+                assert 'test_runtime_field' in rules['rules'][0]['include_fields']
                 for included_key in ['comparekey', 'testkey', '@timestamp']:
                     assert included_key in rules['rules'][0]['include']
 
@@ -363,7 +366,10 @@ def test_load_disabled_rules():
 
 
 def test_raises_on_missing_config():
-    optional_keys = ('aggregation', 'use_count_query', 'query_key', 'compare_key', 'filter', 'include', 'es_host', 'es_port', 'name')
+    optional_keys = (
+        'aggregation', 'use_count_query', 'query_key', 'compare_key', 'filter', 'include', 'es_host', 'es_port',
+        'name', 'include_fields'
+    )
     test_rule_copy = copy.deepcopy(test_rule)
     for key in list(test_rule_copy.keys()):
         test_rule_copy = copy.deepcopy(test_rule)
@@ -383,6 +389,32 @@ def test_raises_on_missing_config():
                     with pytest.raises(EAException):
                         rules = load_conf(test_args)
                         rules['rules'] = rules['rules_loader'].load(rules)
+
+
+def test_no_raises_when_skip_invalid():
+    optional_keys = (
+        'aggregation', 'use_count_query', 'query_key', 'compare_key', 'filter', 'include', 'es_host', 'es_port',
+        'name', 'fields'
+    )
+    test_rule_copy = copy.deepcopy(test_rule)
+    for key in list(test_rule_copy.keys()):
+        test_rule_copy = copy.deepcopy(test_rule)
+        test_config_copy = copy.deepcopy(test_config)
+        test_rule_copy.pop(key)
+
+        # Non required keys
+        if key in optional_keys:
+            continue
+
+        with mock.patch('elastalert.config.read_yaml') as mock_conf_open:
+            mock_conf_open.return_value = test_config_copy
+            with mock.patch('elastalert.loaders.read_yaml') as mock_rule_open:
+                mock_rule_open.return_value = test_rule_copy
+                with mock.patch('os.walk') as mock_walk:
+                    mock_walk.return_value = [('', [], ['testrule.yaml'])]
+                    rules = load_conf(test_args)
+                    rules['skip_invalid'] = True
+                    rules['rules'] = rules['rules_loader'].load(rules)
 
 
 def test_compound_query_key():
@@ -448,6 +480,26 @@ def test_kibana_discover_to_timedelta():
     rules_loader.load_options(test_rule_copy, test_config, 'filename.yaml')
     assert isinstance(test_rule_copy['kibana_discover_to_timedelta'], datetime.timedelta)
     assert test_rule_copy['kibana_discover_to_timedelta'] == datetime.timedelta(minutes=2)
+
+
+def test_opensearch_discover_from_timedelta():
+    test_config_copy = copy.deepcopy(test_config)
+    rules_loader = FileRulesLoader(test_config_copy)
+    test_rule_copy = copy.deepcopy(test_rule)
+    test_rule_copy['opensearch_discover_from_timedelta'] = {'minutes': 2}
+    rules_loader.load_options(test_rule_copy, test_config, 'filename.yaml')
+    assert isinstance(test_rule_copy['opensearch_discover_from_timedelta'], datetime.timedelta)
+    assert test_rule_copy['opensearch_discover_from_timedelta'] == datetime.timedelta(minutes=2)
+
+
+def test_opensearch_discover_to_timedelta():
+    test_config_copy = copy.deepcopy(test_config)
+    rules_loader = FileRulesLoader(test_config_copy)
+    test_rule_copy = copy.deepcopy(test_rule)
+    test_rule_copy['opensearch_discover_to_timedelta'] = {'minutes': 2}
+    rules_loader.load_options(test_rule_copy, test_config, 'filename.yaml')
+    assert isinstance(test_rule_copy['opensearch_discover_to_timedelta'], datetime.timedelta)
+    assert test_rule_copy['opensearch_discover_to_timedelta'] == datetime.timedelta(minutes=2)
 
 
 def test_custom_timestamp_type_timestamp_format():

@@ -6,10 +6,15 @@ definitions:
     type: [string, array]
     items: {type: string}
 
-  # Either a single string OR an array of strings OR an array of ararys
+  # Either a single string OR an array of strings OR an array of arrays
   arrayOfStringsOrOtherArrays: &arrayOfStringsOrOtherArray
     type: [string, array]
     items: {type: [string, array]}
+
+  # Either a single string OR an array of strings OR an array of objects
+  stringOrArrayOfStringsOrObjects: &stringOrArrayOfStringsOrObjects
+    type: [string, array]
+    items: {type: [string, object]}
 
   timedelta: &timedelta
     type: object
@@ -53,9 +58,20 @@ definitions:
       name: {type: string}
       value: {type: string}
 
+  msPowerAutomateFact: &msPowerAutomateFact
+    type: object
+    additionalProperties: false
+    properties:
+      name: {type: string}
+      value: {type: string}    
+
   arrayOfMsTeamsFacts: &arrayOfMsTeamsFacts
     type: array
     items: *msTeamsFact
+
+  arrayOfMsPowerAutomateFacts: &arrayOfMsPowerAutomateFacts
+    type: array
+    items: *msPowerAutomateFact
 
   mattermostField: &mattermostField
     type: object
@@ -71,6 +87,28 @@ definitions:
     items: *mattermostField
 
   filter: &filter {}
+
+  irisIocField: &irisIocField
+    type: object
+    additionalProperties: false
+    properties:
+      ioc_value: {type: string}
+      ioc_description: {type: string}
+      ioc_tlp_id: {type: integer, enum: [1, 2, 3]}
+      ioc_type_id: {type: integer}
+      ioc_tags: {type: string}
+
+  arrayOfIrisIocFields: &arrayOfIrisIocFields
+    type: array
+    items: *irisIocField
+  
+  opsGenieArgs: &opsGenieArgs
+    type: object
+    additionalProperties: false
+    minProperties: 0
+    patternProperties:
+      "^.+$":
+        type: string
 
 required: [type, index, alert]
 type: object
@@ -236,6 +274,7 @@ properties:
           type: string
       - type: string
   aggregation: *timeframe
+  aggregation_alert_time_compared_with_timestamp_field: {type: boolean}
   realert: *timeframe
   realert_key: {type: string}
   exponential_realert: *timeframe
@@ -255,6 +294,9 @@ properties:
     items: *filter
 
   include: {type: array, items: {type: string}}
+  include_fields: {type: array, item: {type: string}}
+  include_rule_params_in_matches: {type: array, items: {type: string}}
+  include_rule_params_in_first_match_only: {type: boolean}
   top_count_keys: {type: array, items: {type: string}}
   top_count_number: {type: integer}
   raw_count_keys: {type: boolean}
@@ -268,10 +310,14 @@ properties:
   query_key: *arrayOfString
   replace_dots_in_field_names: {type: boolean}
   scan_entire_timeframe: {type: boolean}
+  
+  ## System Error Notifications
+  notify_alert: *stringOrArrayOfStringsOrObjects
+  notify_all_errors: {type: boolean}
 
   ### summary table
   summary_table_fields: {type: array, items: {type: string}}
-  summary_table_type: {type: string, enum: ['ascii', 'markdown']}
+  summary_table_type: {type: string, enum: ['ascii', 'html', 'markdown']}
   summary_table_max_rows: {type: integer, minimum: 0}
   summary_prefix: {type: string}
   summary_suffix: {type: string}
@@ -280,13 +326,23 @@ properties:
   generate_kibana_discover_url: {type: boolean}
   shorten_kibana_discover_url: {type: boolean}
   kibana_discover_app_url: {type: string}
-  kibana_discover_version: {type: string, enum: ['8.7', '8.6', '8.5', '8.4', '8.3', '8.2', '8.1', '8.0', '7.17', '7.16', '7.15', '7.14', '7.13', '7.12', '7.11', '7.10', '7.9', '7.8', '7.7', '7.6', '7.5', '7.4', '7.3', '7.2', '7.1', '7.0']}
+  kibana_discover_version: {type: string, enum: ['8.16','8.15','8.14','8.13','8.12','8.11', '8.10', '8.9', '8.8', '8.7', '8.6', '8.5', '8.4', '8.3', '8.2', '8.1', '8.0', '7.17', '7.16', '7.15', '7.14', '7.13', '7.12', '7.11', '7.10', '7.9', '7.8', '7.7', '7.6', '7.5', '7.4', '7.3', '7.2', '7.1', '7.0']}
   kibana_discover_index_pattern_id: {type: string, minLength: 1}
   kibana_discover_columns: {type: array, items: {type: string, minLength: 1}, minItems: 1}
   kibana_discover_from_timedelta: *timedelta
   kibana_discover_to_timedelta: *timedelta
   kibana_discover_security_tenant: {type:string}
 
+  ### Opensearch discover App Link
+  generate_opensearch_discover_url: {type: boolean}
+  opensearch_url: {type: string, format: uri}
+  opensearch_discover_app_url: {type: string}
+  opensearch_discover_version: {type: string, enum: ['2.11']}
+  opensearch_discover_index_pattern_id: {type: string, minLength: 1}
+  opensearch_discover_columns: {type: array, items: {type: string, minLength: 1}, minItems: 1}
+  opensearch_discover_from_timedelta: *timedelta
+  opensearch_discover_to_timedelta: *timedelta
+  
   # Alert Content
   alert_text: {type: string} # Python format string
   alert_text_args: {type: array, items: {type: string}}
@@ -328,6 +384,7 @@ properties:
   alertmanager_ca_certs: {type: [boolean, string]}
   alertmanager_ignore_ssl_errors: {type: boolean}
   alertmanager_timeout: {type: integer}
+  alertmanager_resolve_time: *timedelta
   alertmanager_basic_auth_login: {type: string}
   alertmanager_basic_auth_password: {type: string}
   alertmanager_labels:
@@ -411,6 +468,7 @@ properties:
   dingtalk_proxy: {type: string}
   dingtalk_proxy_login: {type: string}
   dingtalk_proxy_pass: {type: string}
+  dingtalk_sign: {type: string}
 
   ## Discord
   discord_webhook_url: {type: string}
@@ -484,7 +542,7 @@ properties:
             required: [ field ]
             properties:
               field: { type: string, minLength: 1 }
-  gelf_ca_cert: {type: string}
+  gelf_ca_cert: {type: [boolean, string]}
   gelf_http_ignore_ssl_errors: {type: boolean}
   gelf_timeout: {type: integer}
 
@@ -511,6 +569,70 @@ properties:
   http_post2_ignore_ssl_errors: {type: boolean}
   http_post2_timeout: {type: integer}
 
+  ### INDEXER
+  indexer_alerts_name: {type: string}
+  indexer_config: {type: string}
+  indexer_connection:
+    type: object
+    properties:
+      es_host: {type: string}
+      es_hosts: {type: array, items: {type: string}}
+      es_port: {type: integer}
+      ssl_show_warn: {type: boolean}
+      use_ssl: {type: boolean}
+      verify_certs: {type: boolean}
+      ca_cert: {type: string}
+      es_username: {type: string}
+      es_password: {type: string}
+      index_alerts_name: {type: string}
+  indexer_alert_config:
+    type: object
+    minProperties: 1
+    patternProperties:
+      "^.+$":
+        oneOf:
+          - type: [boolean, string, integer]
+          - type: array
+            items:
+                type: object
+                properties:
+                  name: { type: string , minLength: 1 }
+                  value: { type: [boolean, string, integer] , minLength: 1 }
+                  "^.+$": { type: [boolean, string, integer], minLength: 1 }
+          - type: object
+            properties:
+              "^.+$": { type: [boolean, string, integer], minLength: 1 }
+
+  ### IRIS
+  iris_host: {type: string}
+  iris_api_token: {type: string}
+  iris_type: {type: string, enum: ['alert', 'case']}
+  iris_customer_id: {type: integer}
+  iris_ignore_ssl_errors: {type: boolean}
+  iris_ca_cert: {type: [boolean, string]}
+  iris_overwrite_timestamp: {type: boolean}
+  iris_case_template_id: {type: integer}
+  iris_description: {type: string}
+  iris_alert_note: {type: string}
+  iris_alert_tags: {type: string}
+  iris_alert_status_id: {type: integer, enum: [1, 2, 3, 4, 5, 6, 7]}
+  iris_alert_source: {type: string}
+  iris_alert_source_link: {type: string}
+  iris_alert_severity_id: {type: integer, enum: [1, 2, 3, 4, 5, 6]}
+  iris_iocs: *arrayOfIrisIocFields
+  iris_alert_context:
+    type: object
+    minProperties: 1
+    patternProperties:
+      "^.+$":
+        oneOf:
+          - type: string
+          - type: object
+            additionalProperties: false
+            required: [ field ]
+            properties:
+              field: { type: string, minLength: 1 }
+
   ### Jira
   jira_server: {type: string}
   jira_project: {type: string}
@@ -533,8 +655,22 @@ properties:
   jira_transition_to: {type: string}
   jira_bump_after_inactivity: {type: number}
 
+  ### Lark
+  lark_bot_id: { type: string }
+  lark_msgtype: { type: string, enum: [ 'text' ] }
+
   ### Line Notify
   linenotify_access_token: {type: string}
+
+  ### Matrix Hookshot
+  matrixhookshot_ca_certs: {type: [boolean, string]}
+  matrixhookshot_webhook_url: *arrayOfString
+  matrixhookshot_username: {type: string}
+  matrixhookshot_html: {type: string}
+  matrixhookshot_text: {type: string}
+  matrixhookshot_proxy: {type: string}
+  matrixhookshot_ignore_ssl_errors: {type: boolean}
+  matrixhookshot_timeout: {type: integer}
 
   ### Mattermost
   mattermost_webhook_url: *arrayOfString
@@ -559,6 +695,10 @@ properties:
   mattermost_attach_kibana_discover_url: {type: boolean}
   mattermost_kibana_discover_color: {type: string}
   mattermost_kibana_discover_title: {type: string}
+  mattermost_attach_opensearch_discover_url: {type: boolean}
+  mattermost_opensearch_discover_color: {type: string}
+  mattermost_opensearch_discover_title: {type: string}
+
 
   ### Microsoft Teams
   ms_teams_webhook_url: *arrayOfString
@@ -571,19 +711,34 @@ properties:
   ms_teams_kibana_discover_title: {type: string}
   ms_teams_ca_certs: {type: [boolean, string]}
   ms_teams_ignore_ssl_errors: {type: boolean}
+  ms_teams_attach_opensearch_discover_url: {type: boolean}
+  ms_teams_opensearch_discover_title: {type: string}
+
+
+  ### Microsoft Power Automate
+  ms_power_automate_webhook_url: *arrayOfString
+  ms_power_automate_alert_summary: {type: string}
+  ms_power_automate_summary_text_size: {type: string, enum: ['default', 'small', 'medium', 'large', 'extraLarge']}
+  ms_power_automate_body_text_size: {type: string, enum: ['default', 'small', 'medium', 'large', 'extraLarge']}
+  ms_power_automate_proxy: {type: string}
+  ms_power_automate_alert_facts: *arrayOfMsPowerAutomateFacts
+  ms_power_automate_kibana_discover_attach_url: {type: boolean}
+  ms_power_automate_kibana_discover_title: {type: string}
+  ms_power_automate_kibana_discover_color: {type: string, enum: ['default', 'positive', 'destructive']}
+  ms_power_automate_ca_certs: {type: [boolean, string]}
+  ms_power_automate_ignore_ssl_errors: {type: boolean}
+  ms_power_automate_opensearch_discover_attach_url: {type: boolean}
+  ms_power_automate_opensearch_discover_title: {type: string}
+  ms_power_automate_opensearch_discover_color: {type: string, enum: ['default', 'positive', 'destructive']}
+  ms_power_automate_teams_card_width_full: {type: boolean}
 
   ### Opsgenie
-  opsgenie_key: {type: string}
   opsgenie_account: {type: string}
   opsgenie_addr: {type: string}
-  opsgenie_description: {type:string}
-  opsgenie_message: {type: string}
   opsgenie_alias: {type: string}
-  opsgenie_subject: {type: string}
-  opsgenie_priority: {type: string}
-  opsgenie_proxy: {type: string}
-  opsgenie_source: {type: string}
-  opsgenie_entity: {type: string}
+  opsgenie_default_recipients: *arrayOfString
+  opsgenie_default_teams: *arrayOfString
+  opsgenie_description: {type:string}
   opsgenie_details:
     type: object
     minProperties: 1
@@ -596,6 +751,20 @@ properties:
             required: [field]
             properties:
               field: {type: string, minLength: 1}
+  opsgenie_entity: {type: string}
+  opsgenie_key: {type: string}
+  opsgenie_message: {type: string}
+  opsgenie_priority: {type: string}
+  opsgenie_proxy: {type: string}
+  opsgenie_recipients_args: *opsGenieArgs
+  opsgenie_recipients: *arrayOfString
+  opsgenie_source: {type: string}
+  opsgenie_subject: {type: string}
+  opsgenie_subject_args: *arrayOfString
+  opsgenie_tags: *arrayOfString
+  opsgenie_teams_args: *opsGenieArgs
+  opsgenie_teams: *arrayOfString
+
 
   ### PagerDuty
   pagerduty_service_key: {type: string}
@@ -604,6 +773,8 @@ properties:
   pagerduty_incident_key: {type: string}
   pagerduty_incident_key_args: {type: array, items: {type: string}}
   pagerduty_proxy: {type: string}
+  pagerduty_ca_certs: {type: [boolean, string]}
+  pagerduty_ignore_ssl_errors: {type: boolean}
   pagerduty_api_version: {type: string, enum: ['v1', 'v2']}
   pagerduty_v2_payload_class: {type: string}
   pagerduty_v2_payload_class_args: {type: array, items: {type: string}}
@@ -668,6 +839,9 @@ properties:
   slack_attach_kibana_discover_url: {type: boolean}
   slack_kibana_discover_color: {type: string}
   slack_kibana_discover_title: {type: string}
+  slack_attach_opensearch_discover_url: {type: boolean}
+  slack_opensearch_discover_color: {type: string}
+  slack_opensearch_discover_title: {type: string}
   slack_attach_jira_ticket_url: {type: boolean}
   slack_jira_ticket_color: {type: string}
   slack_jira_ticket_title: {type: string}
@@ -704,6 +878,7 @@ properties:
   telegram_proxy_login: {type: string}
   telegram_proxy_pass: {type: string}
   telegram_parse_mode: {type: string, enum: ['markdown', 'markdownV2', 'html']}
+  telegram_thread_id: {type: number}
 
   ### Tencent SMS
   tencent_sms_secret_id: {type: string}
@@ -722,6 +897,10 @@ properties:
   twilio_from_number: {type: string}
   twilio_message_service_sid: {type: string}
   twilio_use_copilot: {type: boolean}
+
+  ### WorkWechat
+  work_wechat_bot_id: { type: string }
+  work_wechat_msgtype: { type: string }
 
   ### Zabbix
   zbx_sender_host: {type: string}

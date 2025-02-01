@@ -44,82 +44,70 @@ def new_get_event_ts(ts_field):
     return lambda event: lookup_es_key(event[0], ts_field)
 
 
-def _find_es_dict_by_key(lookup_dict, term):
-    """ Performs iterative dictionary search based upon the following conditions:
+def _find_es_dict_by_key(lookup_dict: dict, term: str, string_multi_field_name: str = "keyword") -> tuple[dict, str]:
+    """ Performs a divide-and-conquer recursive search to resolve a term string
+    string as compatible dictionary key and list index combination.  It attempts
+    to resolve the ambiguity for . and "keyword" being either literals or delimiters.
 
-    1. Subkeys may either appear behind a full stop (.) or at one lookup_dict level lower in the tree.
+    For example
+       'my.dotted.name.a_child_field.somelist[4]'
+    may be found as
+        lookup_dict['my.dotted.name']['a_child_field']['somelist'][4]
+    or found as
+        lookup_dict['my']['dotted.name']['a_child_field.somelist'][4]
+
+    1. Prefers longer fieldname matches
     2. No wildcards exist within the provided ES search terms (these are treated as string literals)
+    3. Firstly assumes 'keyword' is a fieldname, then assumes 'keyword' is a subfield specifier for a multifield
 
-    This is necessary to get around inconsistencies in ES data.
-
-    For example:
-      {'ad.account_name': 'bob'}
-    Or:
-      {'csp_report': {'blocked_uri': 'bob.com'}}
-    And even:
-       {'juniper_duo.geoip': {'country_name': 'Democratic People's Republic of Korea'}}
-
-    We want a search term of form "key.subkey.subsubkey" to match in all cases.
-    :returns: A tuple with the first element being the dict that contains the key and the second
-    element which is the last subkey used to access the target specified by the term. None is
-    returned for both if the key can not be found.
     """
-    if term in lookup_dict:
-        return lookup_dict, term
-    # If the term does not match immediately, perform iterative lookup:
-    # 1. Split the search term into tokens
-    # 2. Recurrently concatenate these together to traverse deeper into the dictionary,
-    #    clearing the subkey at every successful lookup.
-    #
-    # This greedy approach is correct because subkeys must always appear in order,
-    # preferring full stops and traversal interchangeably.
-    #
-    # Subkeys will NEVER be duplicated between an alias and a traversal.
-    #
-    # For example:
-    #  {'foo.bar': {'bar': 'ray'}} to look up foo.bar will return {'bar': 'ray'}, not 'ray'
-    dict_cursor = lookup_dict
+    subkeys = term.split('.')
 
-    while term:
-        split_results = re.split(r'\[(\d)\]', term, maxsplit=1)
-        if len(split_results) == 3:
-            sub_term, index, term = split_results
-            index = int(index)
-        else:
-            sub_term, index, term = split_results + [None, '']
+    # reverse to match longest fieldnames first
+    for i in reversed(range(1, len(subkeys)+1)):
+        root = ".".join(subkeys[0:i])
 
-        subkeys = sub_term.split('.')
+        # Handle array index references
+        # Example
+        # foo[3]bar[1]baz is recursively checked as
+        # _find_es_dict_by_key(lookup_dict['foo'][3], 'bar[1]baz')
 
-        subkey = ''
+        m = re.search(r'(.+?)\[(\d)\](.*)', root)
+        value_index = None
+        child_components = []
+        if m:
+            root = m.group(1)
+            value_index = int(m.group(2))
+            if m.group(3):
+                child_components.append(m.group(3))
 
-        while len(subkeys) > 0:
-            if not dict_cursor:
-                return {}, None
+        if root in lookup_dict:
+            child_components.extend(subkeys[i:])
 
-            subkey += subkeys.pop(0)
+            # Pursue 'keyword' (if present) as a literal required fieldname
+            child_components_options = [child_components]
+            try:
+                # Then pursue 'keyword' (if present) as subfield specifier by ignoring it
+                if child_components[-1] == string_multi_field_name:
+                    child_components_options.append(child_components[:-1])
+            except IndexError:
+                pass
 
-            if subkey in dict_cursor:
-                if len(subkeys) == 0:
-                    break
-                dict_cursor = dict_cursor[subkey]
-                subkey = ''
-            elif len(subkeys) == 0:
-                # If there are no keys left to match, return None values
-                dict_cursor = None
-                subkey = None
-            else:
-                subkey += '.'
+            for child_components_option in child_components_options:
+                child = ".".join(child_components_option)
+                if value_index is not None:
+                    if not child:
+                        return lookup_dict[root], value_index
+                    if isinstance(lookup_dict[root][value_index], dict):
+                        try:
+                            return _find_es_dict_by_key(lookup_dict[root][value_index], child, string_multi_field_name)
+                        except IndexError:
+                            return {}, None
 
-        if index is not None and subkey:
-            dict_cursor = dict_cursor[subkey]
-            if type(dict_cursor) == list and len(dict_cursor) > index:
-                subkey = index
-                if term:
-                    dict_cursor = dict_cursor[subkey]
-            else:
-                return {}, None
-
-    return dict_cursor, subkey
+                if child and isinstance(lookup_dict[root], dict):
+                    return _find_es_dict_by_key(lookup_dict[root], child, string_multi_field_name)
+                return lookup_dict, root
+    return {}, None
 
 
 def set_es_key(lookup_dict, term, value):
@@ -186,7 +174,8 @@ def dt_to_ts_with_format(dt, ts_format):
 
 
 def ts_now():
-    return datetime.datetime.utcnow().replace(tzinfo=dateutil.tz.tzutc())
+    now = datetime.datetime.now(tz=datetime.UTC)
+    return now.replace(tzinfo=dateutil.tz.tzutc())
 
 
 def ts_utc_to_tz(ts, tz_name):
@@ -236,18 +225,24 @@ def format_index(index, start, end, add_extra=False):
     # Convert to UTC
     start -= start.utcoffset()
     end -= end.utcoffset()
-    original_start = start
-    indices = set()
-    while start.date() <= end.date():
-        indices.add(start.strftime(index))
-        start += datetime.timedelta(days=1)
-    num = len(indices)
+
+    if "%H" in index:
+        dt = datetime.timedelta(hours=1)
+        end = end.replace(second=0, microsecond=0, minute=0)
+    else:
+        dt = datetime.timedelta(days=1)
+        end = end.replace(second=0, microsecond=0, minute=0, hour=0)
     if add_extra:
-        while len(indices) == num:
-            original_start -= datetime.timedelta(days=1)
-            new_index = original_start.strftime(index)
-            assert new_index != index, "You cannot use a static index with search_extra_index"
-            indices.add(new_index)
+        start -= dt
+    indices = set()
+    indices.add(start.strftime(index))
+    while start <= end:
+        start += dt
+        indices.add(start.strftime(index))
+
+    if add_extra:
+        if index in indices:
+            raise EAException("You cannot use a static index {} with search_extra_index".format(index))
 
     return ','.join(indices)
 
@@ -268,8 +263,8 @@ def total_seconds(dt):
 
 
 def dt_to_int(dt):
-    dt = dt.replace(tzinfo=None)
-    return int(total_seconds((dt - datetime.datetime.utcfromtimestamp(0))) * 1000)
+    dt = dt.replace(tzinfo=datetime.UTC)
+    return int(total_seconds((dt - datetime.datetime.fromtimestamp(0, tz=datetime.UTC))) * 1000)
 
 
 def unixms_to_dt(ts):
@@ -277,7 +272,7 @@ def unixms_to_dt(ts):
 
 
 def unix_to_dt(ts):
-    dt = datetime.datetime.utcfromtimestamp(float(ts))
+    dt = datetime.datetime.fromtimestamp(float(ts), tz=datetime.UTC)
     dt = dt.replace(tzinfo=dateutil.tz.tzutc())
     return dt
 

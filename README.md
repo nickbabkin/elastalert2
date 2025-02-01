@@ -26,6 +26,10 @@ The full list of platforms that ElastAlert 2 can fire alerts into can be found [
 
 Please see our [contributing guidelines][6].
 
+## Security
+
+See our [security policy][13] for reporting urgent vulnerabilities.
+
 ## License
 
 ElastAlert 2 is licensed under the [Apache License, Version 2.0][5].
@@ -34,7 +38,7 @@ ElastAlert 2 is licensed under the [Apache License, Version 2.0][5].
 [1]: https://github.com/jertel/elastalert2/blob/master/examples/config.yaml.example
 [2]: https://hub.docker.com/r/jertel/elastalert2
 [3]: https://elastalert2.readthedocs.io/
-[4]: https://elastalert2.readthedocs.io/en/latest/ruletypes.html#alerts
+[4]: https://elastalert2.readthedocs.io/en/latest/alerts.html#alert-types
 [5]: https://www.apache.org/licenses/LICENSE-2.0
 [6]: https://github.com/jertel/elastalert2/blob/master/CONTRIBUTING.md
 [7]: https://github.com/jertel/elastalert2/tree/master/chart/elastalert2
@@ -43,3 +47,4 @@ ElastAlert 2 is licensed under the [Apache License, Version 2.0][5].
 [10]: https://github.com/elastic/elasticsearch
 [11]: https://github.com/jertel/elastalert2/pkgs/container/elastalert2%2Felastalert2
 [12]: https://elastalert2.readthedocs.io/en/latest/recipes/faq.html#does-elastalert-2-support-elasticsearch-8
+[13]: https://github.com/jertel/elastalert2/blob/master/SECURITY.md

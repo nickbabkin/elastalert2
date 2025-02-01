@@ -13,10 +13,16 @@ To expose ElastAlert rule metrics on port ``9979`` run the following command:
 
     $ elastalert --config config.yaml --prometheus_port 9979 
 
+The ``--prometheus_addr`` configuration flag can also be used to bind the Prometheus metrics server to a different host address.
+
+.. code-block:: console
+
+   $ elastalert --config config.yaml --prometheus_port 9979 --prometheus_addr "::"
+
 Rule Metrics
 ------------
 
-The metrics being exposed are related to the `ElastAlert metadata indices <https://elastalert2.readthedocs.io/en/latest/elastalert_status.html>`_. The exposed metrics are in the `Prometheus text-based format <https://prometheus.io/docs/instrumenting/exposition_formats/#text-based-format>`_. Metrics are of the metric type `counter <https://prometheus.io/docs/concepts/metric_types/#counter>`_ or `gauge <https://prometheus.io/docs/concepts/metric_types/#gauge>`_ and follow the `Prometheus metric naming <https://prometheus.io/docs/practices/naming/>`_. 
+The metrics being exposed are related to the `ElastAlert 2 metadata indices <https://elastalert2.readthedocs.io/en/latest/elastalert_status.html>`_. The exposed metrics are in the `Prometheus text-based format <https://prometheus.io/docs/instrumenting/exposition_formats/#text-based-format>`_. Metrics are of the metric type `counter <https://prometheus.io/docs/concepts/metric_types/#counter>`_ or `gauge <https://prometheus.io/docs/concepts/metric_types/#gauge>`_ and follow the `Prometheus metric naming <https://prometheus.io/docs/practices/naming/>`_. 
 
 In the standard metric definition, the metric names are structured as follows:
 

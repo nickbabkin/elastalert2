@@ -448,15 +448,16 @@ class SpikeRule(RuleType):
         extending ref/cur value retrieval logic for spike aggregations
         """
         spike_check_type = self.rules.get('metric_agg_type')
-        if spike_check_type in [None, 'sum', 'value_count', 'cardinality', 'percentile']:
-            # default count logic is appropriate in all these cases
-            return self.ref_windows[qk].count(), self.cur_windows[qk].count()
-        elif spike_check_type == 'avg':
+        if spike_check_type == 'avg':
             return self.ref_windows[qk].mean(), self.cur_windows[qk].mean()
         elif spike_check_type == 'min':
             return self.ref_windows[qk].min(), self.cur_windows[qk].min()
         elif spike_check_type == 'max':
             return self.ref_windows[qk].max(), self.cur_windows[qk].max()
+ 
+        # default count logic is appropriate in all other cases
+        return self.ref_windows[qk].count(), self.cur_windows[qk].count()
+
 
     def clear_windows(self, qk, event):
         # Reset the state and prevent alerts until windows filled again
@@ -522,7 +523,7 @@ class SpikeRule(RuleType):
     def find_matches(self, ref, cur):
         """ Determines if an event spike or dip happening. """
         # Apply threshold limits
-        if self.field_value is None:
+        if self.field_value is None and cur is not None and ref is not None:
             if (cur < self.rules.get('threshold_cur', 0) or
                     ref < self.rules.get('threshold_ref', 0)):
                 return False
@@ -586,6 +587,14 @@ class FlatlineRule(FrequencyRule):
         # Dictionary mapping query keys to the first events
         self.first_event = {}
 
+    def get_threshold(self, key):
+        return self.rules['threshold']
+
+    def get_event_data(self, key):
+        return {
+            'threshold': self.get_threshold(key)
+        }
+
     def check_for_match(self, key, end=True):
         # This function gets called between every added document with end=True after the last
         # We ignore the calls before the end because it may trigger false positives
@@ -602,10 +611,10 @@ class FlatlineRule(FrequencyRule):
 
         # Match if, after removing old events, we hit num_events
         count = self.occurrences[key].count()
-        if count < self.rules['threshold']:
+        if count < self.get_threshold(key):
             # Do a deep-copy, otherwise we lose the datetime type in the timestamp field of the last event
             event = copy.deepcopy(self.occurrences[key].data[-1][0])
-            event.update(key=key, count=count)
+            event.update(key=key, count=count, **self.get_event_data(key))
             self.add_match(event)
 
             if not self.rules.get('forget_keys'):
@@ -632,11 +641,14 @@ class FlatlineRule(FrequencyRule):
         )
         return message
 
+    def get_keys(self):
+        return list(self.occurrences.keys())
+
     def garbage_collect(self, ts):
         # We add an event with a count of zero to the EventWindow for each key. This will cause the EventWindow
         # to remove events that occurred more than one `timeframe` ago, and call onRemoved on them.
         default = ['all'] if 'query_key' not in self.rules else []
-        for key in list(self.occurrences.keys()) or default:
+        for key in self.get_keys() or default:
             self.occurrences.setdefault(
                 key,
                 EventWindow(self.rules['timeframe'], getTimestamp=self.get_ts)
